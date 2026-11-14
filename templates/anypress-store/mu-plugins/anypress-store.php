@@ -389,6 +389,23 @@ add_action('init', function () {
     delete_option('anypress_owner_lock');
 }, 9999);
 
+/**
+ * Fluent Support: the "we got your request" email to the customer, which Fluent Support ships off, turned on once for
+ * every mailbox, so a customer hears back before the first answer. Stores made before this get it too; an owner who
+ * turns it off later keeps it off.
+ */
+add_action('init', function () {
+    if (!class_exists('\FluentSupport\App\Models\MailBox') || get_option('anypress_support_confirm') || !\FluentSupport\App\Models\MailBox::first()) {
+        return;
+    }
+    $key = 'ticket_created_email_to_customer';
+    $settings = new \FluentSupport\App\Services\EmailNotification\Settings();
+    foreach (\FluentSupport\App\Models\MailBox::all() as $box) {
+        $settings->saveBoxEmailSettings($box, $key, ['status' => 'yes'] + (array) $settings->getBoxEmailSettings($box, $key));
+    }
+    update_option('anypress_support_confirm', time(), true);
+}, 10000);
+
 /** Bookings sites: FluentBooking on and FluentCommunity off (Everything has both). They have FluentCart for paid bookings. */
 function anypress_is_bookings_site(array $active): bool
 {

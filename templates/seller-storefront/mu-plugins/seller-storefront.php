@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: Seller storefront defaults
- * Description: Settings the seller storefront template keeps in code: WP Fusion kept out of staging mode and the owner’s details filled in once (FluentCRM, FluentCart, Fluent Support, FluentBooking, FluentAffiliate). Buyers and leads are tagged by the AnyPress CRM lifecycle plugin. Part of the storefront template.
+ * Description: Settings the seller storefront template keeps in code: WP Fusion kept out of staging mode and the owner’s details filled in once (FluentCRM, FluentCart, Fluent Support, FluentBooking, FluentAffiliate), and Fluent Support’s ticket confirmation to customers turned on once. Buyers and leads are tagged by the AnyPress CRM lifecycle plugin. Part of the storefront template.
  */
 
 // WP Fusion compares the site URL with the one it was set up on and stops syncing when they differ. Every
@@ -10,6 +10,23 @@ if (!defined('WPF_STAGING_MODE')) {
     define('WPF_STAGING_MODE', false);
 }
 add_filter('wp_fusion_hide_upgrade_nags', '__return_true');
+
+/**
+ * Fluent Support: the "we got your request" email to the customer, which Fluent Support ships off, turned on once for
+ * every mailbox, so a customer hears back before the first answer. Storefronts made before this get it too; an owner who
+ * turns it off later keeps it off.
+ */
+add_action('init', function () {
+    if (!class_exists('\FluentSupport\App\Models\MailBox') || get_option('anypress_support_confirm') || !\FluentSupport\App\Models\MailBox::first()) {
+        return;
+    }
+    $key = 'ticket_created_email_to_customer';
+    $settings = new \FluentSupport\App\Services\EmailNotification\Settings();
+    foreach (\FluentSupport\App\Models\MailBox::all() as $box) {
+        $settings->saveBoxEmailSettings($box, $key, ['status' => 'yes'] + (array) $settings->getBoxEmailSettings($box, $key));
+    }
+    update_option('anypress_support_confirm', time(), true);
+}, 10000);
 
 /*
  * The owner's details, filled in once. The API sets the site title and admin email after the storefront is made from

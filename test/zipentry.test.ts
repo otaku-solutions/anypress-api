@@ -34,6 +34,16 @@ describe('readZipEntry', () => {
     await expect(readZipEntry(ranged(zip).read, zip.length, 'wp-content/themes/t/style.css', 100)).rejects.toThrow(/larger than/);
   });
 
+  it('reads a zip of thousands of files in a few requests', async () => {
+    const many: Record<string, string> = { 'wp-content/plugins/anypress-client-data/roles.json': roles };
+    for (let i = 0; i < 5000; i++) many[`wp-includes/f${i}.php`] = `<?php // ${i}`;
+    const zip = makeZip(many);
+    const { read, reads } = ranged(zip);
+    const bytes = await readZipEntry(read, zip.length, 'wp-content/plugins/anypress-client-data/roles.json', 1024 * 1024);
+    expect(bytes?.toString('utf8')).toBe(roles);
+    expect(reads.length).toBeLessThanOrEqual(3);
+  });
+
   it('refuses what is not a zip', async () => {
     const junk = new Uint8Array(100);
     await expect(readZipEntry(ranged(junk).read, junk.length, 'x', 100)).rejects.toThrow(/Not a zip/);

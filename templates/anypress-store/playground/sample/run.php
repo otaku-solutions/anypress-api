@@ -206,6 +206,8 @@ $parts = [
     'support' => defined('FLUENT_SUPPORT_VERSION') && !empty($sample['tickets']),
     'affiliates' => defined('FLUENT_AFFILIATE_VERSION') && !empty($sample['affiliates']),
     'community' => defined('FLUENT_COMMUNITY_PLUGIN_VERSION') && !empty($sample['community']),
+    // After the community: its events are posted in its spaces.
+    'events' => defined('FLUENT_EVENT_PLUGIN_VERSION') && !empty($sample['community']['events']),
     'extras' => true,
     // Last: buyers, bookers and members are contacts already (each plugin adds them); the CRM part adds the rest of
     // the list, notes, the Newsletter list and the automations they are in.

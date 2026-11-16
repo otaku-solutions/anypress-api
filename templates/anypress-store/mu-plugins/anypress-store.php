@@ -221,6 +221,7 @@ add_action('init', function () {
         'wp-fusion-lite' => 'wp-fusion-lite/wp-fusion-lite.php',
         'rank-math' => 'seo-by-rank-math/rank-math.php',
         'fluent-toolkit' => 'fluent-toolkit/fluent-toolkit.php',
+        'fluent-event' => 'fluent-event/fluent-event.php',
     ];
     $applied = get_option('anypress_owner_applied');
     if (is_string($applied)) {
@@ -369,6 +370,36 @@ add_action('init', function () {
             $titles['knowledgegraph_name'] = $name;
             $titles['website_name'] = $name;
             update_option('rank-math-options-titles', $titles);
+        },
+        // FluentEvent: the community's sidebar gets its Events link (FluentEvent adds it switched off). Saved through
+        // FluentCommunity's Menu Settings route as the site's admin, as that screen does; presets.php turned the
+        // FluentEvent feature on. Each space's own Events tab stays the space admin's choice.
+        'fluent-event' => function () {
+            if (!class_exists(\FluentCommunity\Modules\Integrations\Integrations::class) || !\FluentCommunity\Modules\Integrations\Integrations::isFluentEventEnabled()) {
+                return;
+            }
+            $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
+            $before = get_current_user_id();
+            wp_set_current_user((int) ($admins[0] ?? 0));
+            try {
+                $menu = rest_do_request(new \WP_REST_Request('GET', '/fluent-community/v2/settings/menu-settings'))->get_data();
+                $groups = is_array($menu['menuSettings'] ?? null) ? $menu['menuSettings'] : [];
+                $found = false;
+                foreach ($groups['mainMenuItems'] ?? [] as $key => $item) {
+                    if (($item['slug'] ?? '') === 'fluent_events') {
+                        $groups['mainMenuItems'][$key]['enabled'] = 'yes';
+                        $found = true;
+                    }
+                }
+                if ($found) {
+                    $save = new \WP_REST_Request('POST', '/fluent-community/v2/settings/menu-settings');
+                    $save->set_header('content-type', 'application/json');
+                    $save->set_body((string) wp_json_encode(['menuSettings' => $groups]));
+                    rest_do_request($save);
+                }
+            } finally {
+                wp_set_current_user($before);
+            }
         },
         // FluentHub: every Fluent plugin opens in its one workspace, with one menu and no separate app headers.
         'fluent-toolkit' => function () {

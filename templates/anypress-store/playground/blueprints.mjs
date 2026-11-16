@@ -32,7 +32,7 @@ const roles = JSON.parse(readFileSync(resolve(TEMPLATE, 'roles.json'), 'utf8'));
 const SAMPLE_STEPS = [
   { parts: ['mail', 'blog', 'forms'], caption: 'Writing six months of blog posts' },
   {
-    parts: ['shop', 'bookings', 'support', 'affiliates', 'community'],
+    parts: ['shop', 'bookings', 'support', 'affiliates', 'community', 'events'],
     types: ['bookings', 'online-store', 'community', 'everything'],
     caption: (type) =>
       ({

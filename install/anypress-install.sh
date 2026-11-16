@@ -20,7 +20,7 @@ STATE=$STATE_DIR/state.env
 CREDS=$STATE_DIR/credentials.env
 COOLIFY=http://127.0.0.1:8000/api/v1
 # Where the store templates are released (templates-v*, .github/workflows/release-templates.yml).
-TEMPLATES_REPO=hamchowderr/waas-provisioning-api
+TEMPLATES_REPO=otaku-solutions/anypress-api
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 info() { printf '  %s\n' "$*"; }
@@ -223,7 +223,7 @@ api() {
   [ -n "${ADMIN_TOKEN:-}" ] || { ADMIN_TOKEN=$(random_secret); remember "$CREDS" ADMIN_TOKEN "$ADMIN_TOKEN"; }
   [ -n "${AUTH_SECRET:-}" ] || { AUTH_SECRET=$(random_secret); remember "$CREDS" AUTH_SECRET "$AUTH_SECRET"; }
   if [ -z "${API_UUID:-}" ]; then
-    API_UUID=$(app waas-api https://github.com/hamchowderr/waas-provisioning-api "$API_REF" dockerfile 4111 "$API_URL")
+    API_UUID=$(app waas-api https://github.com/otaku-solutions/anypress-api "$API_REF" dockerfile 4111 "$API_URL")
     remember "$STATE" API_UUID "$API_UUID"
   fi
   local brand_domain=$ANYPRESS_BRAND_DOMAIN
@@ -278,7 +278,7 @@ dashboard() {
   say "Dashboard"
   if [ -n "${VERCEL_TOKEN:-}" ]; then dashboard_vercel; return; fi
   if [ -z "${DASHBOARD_UUID:-}" ]; then
-    DASHBOARD_UUID=$(app waas-dashboard https://github.com/hamchowderr/waas-dashboard "$DASHBOARD_REF" nixpacks 3000 "$DASHBOARD_URL")
+    DASHBOARD_UUID=$(app waas-dashboard https://github.com/otaku-solutions/anypress-dashboard "$DASHBOARD_REF" nixpacks 3000 "$DASHBOARD_URL")
     remember "$STATE" DASHBOARD_UUID "$DASHBOARD_UUID"
   fi
   envs "$DASHBOARD_UUID" <<EOF
@@ -342,7 +342,7 @@ VERCEL_PROJECT_ID=$VERCEL_PROJECT_ID
 VERCEL_TEAM_ID=${VERCEL_TEAM_ID:-}"
 
   src=$(mktemp -d)
-  curl -fsSL "https://codeload.github.com/hamchowderr/waas-dashboard/tar.gz/$DASHBOARD_REF" | tar xz -C "$src" --strip-components=1 \
+  curl -fsSL "https://codeload.github.com/otaku-solutions/anypress-dashboard/tar.gz/$DASHBOARD_REF" | tar xz -C "$src" --strip-components=1 \
     || die "could not download the dashboard ($DASHBOARD_REF)"
   rm -rf "$src/.beads" "$src/.github"
   files=$(mktemp)

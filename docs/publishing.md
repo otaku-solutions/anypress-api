@@ -18,7 +18,7 @@ Releases use npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers)
 To set it up again (for example after moving the repository), sign in with the npm account that owns the package and run this. `npm trust` needs npm 11.15.0 or newer (check with `npm -v`; upgrade with `npm install -g npm@latest`):
 
 ```sh
-npm trust github waas-provisioning-sdk --file release-sdk-typescript.yml --repo hamchowderr/waas-provisioning-api --allow-publish
+npm trust github waas-provisioning-sdk --file release-sdk-typescript.yml --repo otaku-solutions/anypress-api --allow-publish
 ```
 
 `npm trust list waas-provisioning-sdk` shows what is trusted. You can also manage it on the package's npm page under **Settings**, **Trusted Publisher**.
@@ -27,13 +27,13 @@ npm trust github waas-provisioning-sdk --file release-sdk-typescript.yml --repo 
 
 Packagist reads `composer.json` from the root of a Git repository, so the release workflow copies `sdk/php` (with its history) to its own repository and tags it there. That repository is read-only: all changes happen here.
 
-1. Create an **empty** public repository `hamchowderr/waas-provisioning-sdk-php` on GitHub: no README, license or `.gitignore`. In its settings, turn off Issues, and set the description to "Read-only copy of sdk/php from hamchowderr/waas-provisioning-api. Send issues and pull requests there."
+1. Create an **empty** public repository `hamchowderr/waas-provisioning-sdk-php` on GitHub: no README, license or `.gitignore`. In its settings, turn off Issues, and set the description to "Read-only copy of sdk/php from otaku-solutions/anypress-api. Send issues and pull requests there."
 2. Make a deploy key on your computer (no passphrase):
    ```sh
    ssh-keygen -t ed25519 -N '' -C 'waas-provisioning-sdk-php deploy' -f php-sdk-deploy-key
    ```
 3. In **waas-provisioning-sdk-php**: **Settings**, **Deploy keys**, **Add deploy key**. Paste `php-sdk-deploy-key.pub` and tick **Allow write access**.
-4. In **waas-provisioning-api** (this repository): **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Name `PHP_SDK_DEPLOY_KEY`, value the whole content of `php-sdk-deploy-key` (the private key). Then delete both key files from your computer.
+4. In **anypress-api** (this repository): **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Name `PHP_SDK_DEPLOY_KEY`, value the whole content of `php-sdk-deploy-key` (the private key). Then delete both key files from your computer.
 5. Cut the first PHP release (below), so the new repository has a `main` branch and a `v0.1.0` tag.
 6. On [packagist.org](https://packagist.org), sign in with GitHub, choose **Submit**, and enter `https://github.com/hamchowderr/waas-provisioning-sdk-php`. The name comes from `composer.json`: `otakusolutions/waas-provisioning-sdk`. The first account to submit an `otakusolutions/...` package owns that vendor name.
 7. On the package page, check it says it is updated automatically. If it doesn't, connect your GitHub account under your Packagist profile, or add the Packagist webhook to the PHP SDK repository as Packagist's page describes.

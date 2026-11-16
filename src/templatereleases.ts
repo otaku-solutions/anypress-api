@@ -26,7 +26,7 @@ export interface ReleaseSource {
   repo: string;
 }
 
-const defaultReleaseSource = (): ReleaseSource => ({ octokit: new Octokit({ userAgent: 'anypress-api' }), owner: 'hamchowderr', repo: 'waas-provisioning-api' });
+const defaultReleaseSource = (): ReleaseSource => ({ octokit: new Octokit({ userAgent: 'anypress-api' }), owner: 'otaku-solutions', repo: 'anypress-api' });
 
 type Release = { tag: string; assets: Map<string, number>; checks?: string };
 

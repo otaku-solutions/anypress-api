@@ -14,7 +14,7 @@ const SOURCES = [
   { file: 'webhooks.yaml', tag: 'Webhooks' },
 ];
 
-const DOCS_BASE = 'https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/';
+const DOCS_BASE = 'https://github.com/otaku-solutions/anypress-api/blob/main/docs/';
 
 const DESCRIPTION = `Create and manage WordPress stores: tenants, their domains and sending domains, versions, snapshots and templates.
 
@@ -33,11 +33,11 @@ const TAGS: Record<string, [string, string]> = {
   Tenant: ['Tenants', 'Create, list, update and delete stores (tenants).'],
   TenantDomain: ['Domains', "A store's domains: add one, remove one, choose the main domain, check availability."],
   TenantLifecycle: ['Suspend, back up and restore', 'Suspend, resume, back up and restore stores, so a cancelled subscription can keep its store for a grace period and a deleted store can come back from its backup.'],
-  TenantSite: ['Site editing', "Edit a store's pages and design (sections, patterns, colours and fonts, header, footer, menus) through its AnyPress Client, for AI agents. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/site-editing.md)."],
-  Support: ['Support tickets', 'Tickets for the signed-in person (a website owner, seller or reseller), filed with whoever helps them: a reseller by email, or the support desk. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/support.md).'],
-  Reference: ['References', 'Read a website, Shopify shop, Figma file or document into one bundle (design, page text, screenshots, images, products) to build a site from. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/references.md).'],
-  DemoDraft: ['Demo drafts', 'Save a demo someone built on WordPress Playground, so the store made after checkout starts with its pages, styles and photos. These calls take no API key. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/demo-drafts.md).'],
-  SiteImport: ['Moving a site in', 'Move an existing WordPress site in from another host with the AnyPress Export plugin. These calls take the import code instead of an API key. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/site-imports.md).'],
+  TenantSite: ['Site editing', "Edit a store's pages and design (sections, patterns, colours and fonts, header, footer, menus) through its AnyPress Client, for AI agents. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/site-editing.md)."],
+  Support: ['Support tickets', 'Tickets for the signed-in person (a website owner, seller or reseller), filed with whoever helps them: a reseller by email, or the support desk. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/support.md).'],
+  Reference: ['References', 'Read a website, Shopify shop, Figma file or document into one bundle (design, page text, screenshots, images, products) to build a site from. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/references.md).'],
+  DemoDraft: ['Demo drafts', 'Save a demo someone built on WordPress Playground, so the store made after checkout starts with its pages, styles and photos. These calls take no API key. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/demo-drafts.md).'],
+  SiteImport: ['Moving a site in', 'Move an existing WordPress site in from another host with the AnyPress Export plugin. These calls take the import code instead of an API key. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/site-imports.md).'],
   TenantMail: ['Sending domain', "A store's own sending domain, and the Domain Connect link that adds DNS records at the customer's DNS host."],
   Version: ['Versions', 'Versions of your storefront product: the WordPress install each new store is copied from.'],
   Snapshot: ['Snapshots', 'Snapshots of versions.'],
@@ -45,10 +45,10 @@ const TAGS: Record<string, [string, string]> = {
   Product: ['Products', 'The storefronts (products) in your partner account. Partner keys only.'],
   BaseSnapshot: ['Templates', 'Templates (base snapshots) that new versions start from. Partner keys only.'],
   ApiKeys: ['API keys', 'List, create, rotate and revoke your own API keys. A secret is shown once, in the response that creates the key.'],
-  Webhooks: ['Webhooks', 'Endpoints that get a signed POST when a store or version finishes a change, and their deliveries. How to verify them: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/webhooks.md).'],
-  PluginChoices: ['Plugin choices', "wordpress.org plugins your stores get on top of your template, or that it switches off, per site type. Applied to each new version as it builds. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/plugin-choices.md)."],
+  Webhooks: ['Webhooks', 'Endpoints that get a signed POST when a store or version finishes a change, and their deliveries. How to verify them: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/webhooks.md).'],
+  PluginChoices: ['Plugin choices', "wordpress.org plugins your stores get on top of your template, or that it switches off, per site type. Applied to each new version as it builds. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/plugin-choices.md)."],
   PluginUpdates: ['Plugin updates', 'Update checks made by the AnyPress plugins. The response points at a signed release package.'],
-  Branding: ['Demo page', "The name, look and shop link of a seller's or reseller's demo page, and the theme zips its demos install. Public, no key needed. How: [guide](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/branding.md)."],
+  Branding: ['Demo page', "The name, look and shop link of a seller's or reseller's demo page, and the theme zips its demos install. Public, no key needed. How: [guide](https://github.com/otaku-solutions/anypress-api/blob/main/docs/branding.md)."],
   Pricing: ['Prices', "AnyPress's price list: every site type's monthly and yearly price per size, the volume savings, the reseller discount and the affiliate share. Public, no key needed."],
 };
 

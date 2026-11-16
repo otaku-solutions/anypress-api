@@ -107,7 +107,7 @@ function anypress_sample_entry(\FluentForm\App\Models\Form $form, array $data, f
 /** A photo from the sample's own set (sample/images, CC0 from StockSnap), added to the media library. Answers its id. */
 function anypress_sample_image(string $name, int $postId = 0, string $title = ''): int
 {
-    $base = defined('ANYPRESS_SAMPLE_IMAGES') ? ANYPRESS_SAMPLE_IMAGES : 'https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/templates/anypress-store/playground/sample/images/';
+    $base = defined('ANYPRESS_SAMPLE_IMAGES') ? ANYPRESS_SAMPLE_IMAGES : 'https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/templates/anypress-store/playground/sample/images/';
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/media.php';
     require_once ABSPATH . 'wp-admin/includes/image.php';

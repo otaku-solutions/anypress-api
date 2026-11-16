@@ -8,6 +8,9 @@
  * Everything is made through each plugin's own REST routes (as its admin screens do) or its own models and services,
  * never SQL on its tables. Each part runs only when its plugin is on for this site type. No email leaves Playground.
  */
+// The Everything demo makes months of orders, bookings and members in one run with every plugin loaded, which needs
+// more than Playground's 256 MB.
+ini_set('memory_limit', '512M');
 require '/wordpress/wp-load.php';
 wp_set_current_user(1);
 // Playground runs on SQLite: a few report queries some plugins run while saving don't translate. They only feed
@@ -208,6 +211,8 @@ $parts = [
     'community' => defined('FLUENT_COMMUNITY_PLUGIN_VERSION') && !empty($sample['community']),
     // After the community: its events are posted in its spaces.
     'events' => defined('FLUENT_EVENT_PLUGIN_VERSION') && !empty($sample['community']['events']),
+    // Tables and charts before the pages that show them.
+    'tables' => defined('NINJA_TABLES_VERSION') && defined('NINJA_CHARTS_VERSION') && !empty($sample['tables']),
     'extras' => true,
     // Last: buyers, bookers and members are contacts already (each plugin adds them); the CRM part adds the rest of
     // the list, notes, the Newsletter list and the automations they are in.

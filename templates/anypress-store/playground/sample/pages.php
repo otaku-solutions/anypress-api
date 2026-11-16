@@ -119,6 +119,29 @@ if (defined('FLUENT_BOOKING_VERSION')) {
 }
 $writers = array_map(static fn ($w) => [$w[0] . ' ' . $w[1], $w[2]], $sample['writers'] ?? []);
 
+// Ninja Tables and Ninja Charts (tables.php): each table or chart as a section on the page it names (before its
+// closing call to action), or on a page of its own, in the menu, when it names one.
+$ownPages = [];
+$extra = [];
+foreach ($sample['made']['tables'] ?? [] as $made) {
+    $slug = $made['page'];
+    if (is_array($slug)) {
+        [$title, $slug] = $slug;
+        $ids[$slug] ??= $pageFor($slug, $title);
+        $ownPages[$slug] = true;
+    }
+    if (empty($ids[$slug])) {
+        continue;
+    }
+    $shortcode = $made['chart'] ? '[ninja_charts id="' . $made['chart'] . '"]' : '[ninja_tables id="' . $made['table'] . '"]';
+    $extra[$slug] = ($extra[$slug] ?? '') . anypress_section(
+        $made['chart'] ? 'Chart' : 'Table',
+        anypress_titles($made['title'], $made['text']) . '<!-- wp:shortcode -->' . $shortcode . '<!-- /wp:shortcode -->',
+        '',
+        '64rem'
+    );
+}
+
 // The pages, from the template's own sections with the business's words in them.
 $content = [];
 $content['home'] = $hero($name, $copy['hero'], $buttons($copy['buttons']), $photo)
@@ -133,6 +156,7 @@ $content['home'] = $hero($name, $copy['hero'], $buttons($copy['buttons']), $phot
 $content['about'] = anypress_story($storyTitle, $story)
     . ($writers ? anypress_features(__('The team'), $writers) : '')
     . anypress_features(__('What we care about'), $values, 'tint')
+    . ($extra['about'] ?? '')
     . anypress_call_to_action(__('Say hello'), '', [[__('Contact us'), get_permalink($ids['contact'])]]);
 $content['contact'] = anypress_features(__('Get in touch'), $copy['contact'], 'tint') . anypress_contact_form();
 if (!empty($copy['services'])) {
@@ -140,8 +164,12 @@ if (!empty($copy['services'])) {
     $own = !empty($sample['form']['title']) && ($sample['form']['keep'] ?? null) ? $form([$sample['form']['title']]) : 0;
     $content['services'] = anypress_hero($servicesTitle, $servicesText, [[__('Get in touch'), $own ? '#enquire' : get_permalink($ids['contact'])]])
         . anypress_features(__('What we offer'), $offers)
+        . ($extra['services'] ?? '')
         . ($own ? anypress_section('Enquiry', anypress_titles($sample['form']['title']) . '<!-- wp:shortcode -->[fluentform id="' . $own . '"]<!-- /wp:shortcode -->', 'tint', '44rem', 'enquire') : '')
         . (!empty($copy['faq']) ? '' : anypress_call_to_action($copy['cta'][0], $copy['cta'][1], $buttons($copy['cta'][2])));
+}
+foreach (array_keys($ownPages) as $slug) {
+    $content[$slug] = $extra[$slug];
 }
 if (!empty($copy['intake'])) {
     $intake = $form([$copy['intake'][0]]);
@@ -176,7 +204,7 @@ if ($menu) {
     if ($events) {
         $items .= $link($events);
     }
-    foreach (['services', 'blog', 'about', 'contact'] as $slug) {
+    foreach ([...array_keys($ownPages), 'services', 'blog', 'about', 'contact'] as $slug) {
         if (!empty($ids[$slug])) {
             $items .= $link($ids[$slug]);
         }

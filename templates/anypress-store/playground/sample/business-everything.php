@@ -99,6 +99,12 @@ return [
     'video' => 'Inside the studio',
     'snippet' => ['Free shipping notice', "add_action('wp_body_open', function () {\n    echo '<p class=\"shipping-notice\">Free shipping over \$75</p>';\n});"],
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
+    // Ninja Tables and Ninja Charts (data.php says how; the price list and course outline come from the bookings and the course).
+    'tables' => [
+        ['about', 'A year at the studio', 'Shop orders and bookings, month by month over the last six months.', ['Month' => 'text', 'Orders' => 'number', 'Bookings' => 'number'], [
+            ['June', 96, 41], ['July', 88, 45], ['August', 104, 52], ['September', 121, 58], ['October', 139, 63], ['November', 172, 70],
+        ], 'line'],
+    ],
     'pages' => [
         // The hero's photo: the blog post whose photo it uses.
         'photo' => 12,

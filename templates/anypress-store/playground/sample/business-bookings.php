@@ -121,6 +121,12 @@ return [
     'video' => 'A short welcome from the studio',
     'snippet' => ['Booking reminder banner', "add_action('wp_body_open', function () {\n    echo '<p class=\"booking-banner\">New: Saturday mornings now open</p>';\n});"],
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
+    // Ninja Tables and Ninja Charts (data.php says how; the price list comes from the booking types).
+    'tables' => [
+        ['about', 'Sessions each month', 'How many massage and coaching sessions we have run, month by month.', ['Month' => 'text', 'Massage' => 'number', 'Coaching' => 'number'], [
+            ['June', 64, 22], ['July', 58, 25], ['August', 61, 31], ['September', 72, 34], ['October', 79, 38], ['November', 85, 41],
+        ], 'line'],
+    ],
     'pages' => [
         'hero' => 'Massage and coaching in a quiet studio in Sacramento. Book a session online in a minute, and come as you are.',
         'buttons' => [['Book a session', '#book'], ['Our services', 'services']],

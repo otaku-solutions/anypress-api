@@ -290,6 +290,40 @@
       ]
     },
     {
+      "name": "ninja-tables",
+      "source": "wordpress-plugin:ninja-tables",
+      "places": [
+        {
+          "file": "templates/anypress-store/build.sh",
+          "match": "^ninja\\-tables (?<version>\\S+) (?<sha>[0-9a-f]{64})$"
+        },
+        {
+          "file": "templates/anypress-store/README.md",
+          "match": "^\\| [^|]+ \\| `ninja-tables` \\| (?<version>[^ |]+) \\|$"
+        }
+      ],
+      "run": [
+        "node templates/anypress-store/playground/blueprints.mjs"
+      ]
+    },
+    {
+      "name": "ninja-charts",
+      "source": "wordpress-plugin:ninja-charts",
+      "places": [
+        {
+          "file": "templates/anypress-store/build.sh",
+          "match": "^ninja\\-charts (?<version>\\S+) (?<sha>[0-9a-f]{64})$"
+        },
+        {
+          "file": "templates/anypress-store/README.md",
+          "match": "^\\| [^|]+ \\| `ninja-charts` \\| (?<version>[^ |]+) \\|$"
+        }
+      ],
+      "run": [
+        "node templates/anypress-store/playground/blueprints.mjs"
+      ]
+    },
+    {
       "name": "seo-by-rank-math",
       "source": "wordpress-plugin:seo-by-rank-math",
       "places": [

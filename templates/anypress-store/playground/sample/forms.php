@@ -75,7 +75,8 @@ if ($spec && isset($spec['keep'])) {
 } elseif ($spec) {
     $form = (new \FluentForm\App\Services\Form\FormService())->store(['predefined' => $spec['template'], 'type' => 'form']);
     $form->title = $spec['title'];
-    $services = [
+    // An industry demo names its own services ('services').
+    $services = $sample['services'] ?? [
         'website' => ['Monthly bookkeeping', 'Year-end accounts', 'Tax return', 'Payroll'],
         'bookings' => ['Massage', 'Coaching', 'Consultation'],
         'community' => ['The community', 'The course', 'The live Q&A'],

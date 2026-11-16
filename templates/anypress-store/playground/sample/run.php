@@ -84,8 +84,8 @@ function anypress_sample_user(array $person): int
     return is_wp_error($id) ? 0 : (int) $id;
 }
 
-/** One entry on a Fluent Forms form, as a submission saves it: the entry, its details and its id hash. */
-function anypress_sample_entry(\FluentForm\App\Models\Form $form, array $data, float $daysAgo, string $status, bool $starred = false, string $page = '/contact/'): void
+/** One entry on a Fluent Forms form, as a submission saves it: the entry, its details and its id hash. Answers its id. */
+function anypress_sample_entry(\FluentForm\App\Models\Form $form, array $data, float $daysAgo, string $status, bool $starred = false, string $page = '/contact/'): int
 {
     $previous = (int) \FluentForm\App\Models\Submission::where('form_id', $form->id)->max('serial_number');
     $when = anypress_sample_when($daysAgo, 9 + (int) ($daysAgo * 7) % 9);
@@ -105,6 +105,7 @@ function anypress_sample_entry(\FluentForm\App\Models\Form $form, array $data, f
     ]);
     (new \FluentForm\App\Services\Submission\SubmissionService())->recordEntryDetails($submission->id, $form->id, $data);
     \FluentForm\App\Helpers\Helper::setSubmissionMeta($submission->id, '_entry_uid_hash', md5(wp_generate_uuid4() . $submission->id), $form->id);
+    return (int) $submission->id;
 }
 
 /** A photo from the sample's own set (sample/images, CC0 from StockSnap), added to the media library. Answers its id. */
@@ -202,10 +203,15 @@ update_option('blogdescription', $sample['business']['tagline']);
 $parts = [
     // First: the email log (FluentSMTP's simulator), so every email a later part sends is listed, and none leaves.
     'mail' => defined('FLUENTMAIL'),
+    // An industry demo's look, before anything that takes the theme's colours.
+    'look' => !empty($sample['kit']),
     'blog' => true,
     'forms' => defined('FLUENTFORM'),
     'shop' => defined('FLUENTCART_VERSION') && !empty($sample['shop']),
     'bookings' => defined('FLUENT_BOOKING_VERSION') && !empty($sample['bookings']),
+    // After the calendars: one form that asks what the client needs and books them with the right host (an industry
+    // demo's 'routing').
+    'routing' => defined('FLUENTFORM') && defined('FLUENT_BOOKING_VERSION') && !empty($sample['routing']),
     'support' => defined('FLUENT_SUPPORT_VERSION') && !empty($sample['tickets']),
     'affiliates' => defined('FLUENT_AFFILIATE_VERSION') && !empty($sample['affiliates']),
     'community' => defined('FLUENT_COMMUNITY_PLUGIN_VERSION') && !empty($sample['community']),

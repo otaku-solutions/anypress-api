@@ -32,13 +32,18 @@ return static function (string $type): array {
         ['Owen', 'Price', 'Kansas City', '', 'BBQ judge and backyard pitmaster.'],
     ];
 
-    // The business behind this site type (business-<type>.php): its name, writers, posts, newsletter and forms.
+    // The business behind this site type (business-<type>.php): its name, writers, posts, newsletter and forms. An
+    // industry demo of the type names its own business (business-<type>-<variant>.php, ANYPRESS_SAMPLE_VARIANT).
     $type = is_file(__DIR__ . '/business-' . $type . '.php') ? $type : 'website';
-    $sample = require __DIR__ . '/business-' . $type . '.php';
+    $variant = defined('ANYPRESS_SAMPLE_VARIANT') && preg_match('/^[a-z0-9-]+$/', (string) ANYPRESS_SAMPLE_VARIANT) && is_file(__DIR__ . '/business-' . $type . '-' . ANYPRESS_SAMPLE_VARIANT . '.php') ? (string) ANYPRESS_SAMPLE_VARIANT : '';
+    $sample = require __DIR__ . '/business-' . $type . ($variant ? '-' . $variant : '') . '.php';
     $sample['type'] = $type;
+    // Its blog photos (images/<type> or images/<type>-<variant>).
+    $sample['images'] = $type . ($variant ? '-' . $variant : '');
     $sample['blog'] = array_intersect_key($sample, array_flip(['writers', 'categories', 'posts', 'drafts', 'scheduled', 'comments', 'replies']));
     $sample['business'] = ['name' => $sample['name'], 'tagline' => $sample['tagline']];
-    $sample['people'] = $people;
+    // People of the business's own (an industry demo's hosts, say), after everyone else: [first, last, city, company, bio].
+    $sample['people'] = array_merge($people, $sample['staff'] ?? []);
     // The rest of the mailing list: readers and customers who signed up over the months, without a story of their own.
     $firsts = ['Ava', 'Leo', 'Mia', 'Eli', 'Ruby', 'Max', 'Lena', 'Theo', 'Iris', 'Finn', 'Nina', 'Jude', 'Cleo', 'Rafael', 'Tess', 'Arjun', 'Lucy', 'Diego', 'Hazel', 'Sami', 'June', 'Felix', 'Rosa', 'Ivan', 'Esme', 'Malik', 'Wren', 'Tomas', 'Lila', 'Hugo', 'Anya', 'Kofi', 'Maeve', 'Dev', 'Clara'];
     $lasts = ['Brooks', 'Ito', 'Garcia', 'Novak', 'Reid', 'Mensah', 'Lund', 'Costa', 'Byrne', 'Sato', 'Patel', 'Keller', 'Duarte', 'Hayes', 'Okoro'];
@@ -105,19 +110,30 @@ return static function (string $type): array {
 
     // [event index, person index, days ahead (negative: past), hour UTC, status]: three months of sessions, done,
     // a few no-shows and cancellations, and the next two weeks filling up.
+    // A business with its own hosts and services (business-<type>-<variant>.php 'bookings') says which services past
+    // and coming sessions were for ('past' and 'coming': event indexes, in turn).
+    $own = $sample['bookings'] ?? [];
+    // Hosts are people of the list by index, or of the business's own staff as 's<n>'.
+    foreach ($own['hosts'] ?? [] as $h => [$who]) {
+        if (is_string($who)) {
+            $own['hosts'][$h][0] = count($people) + (int) substr($who, 1);
+        }
+    }
+    $past = $own['past'] ?? [1, 2, 1, 0, 2, 1];
+    $coming = $own['coming'] ?? [1, 2, 0, 1];
     $bookings = [];
     $clients = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 14, 18, 19, 22, 23, 2, 4, 6, 8, 3, 10, 12, 5, 9, 0, 7];
     foreach ($clients as $b => $who) {
         $status = $b % 11 === 7 ? 'no_show' : ($b % 9 === 4 ? 'cancelled' : 'completed');
         if ($type !== 'everything' || $b % 2) {
-            $bookings[] = [[1, 2, 1, 0, 2, 1][$b % 6], $who, -(90 - $b * 3), 10 + ($b * 3) % 7, $status];
+            $bookings[] = [$past[$b % count($past)], $who, -(90 - $b * 3), 10 + ($b * 3) % 7, $status];
         }
     }
     foreach ([5, 6, 7, 8, 9, 10, 11, 12, 13, 2, 4, 6] as $u => $who) {
-        $bookings[] = [[1, 2, 0, 1][$u % 4], $who, 1 + $u, 10 + ($u * 2) % 7, $u === 9 ? 'cancelled' : 'scheduled'];
+        $bookings[] = [$coming[$u % count($coming)], $who, 1 + $u, 10 + ($u * 2) % 7, $u === 9 ? 'cancelled' : 'scheduled'];
     }
 
-    $sample['bookings'] = $takesBookings ? [
+    $sample['bookings'] = $takesBookings && $own ? ['bookings' => $bookings] + $own : ($takesBookings ? [
         'hosts' => [
             [20, 'Massage therapist with ten years of practice.'],
             [21, $type === 'everything' ? 'Designer. Runs the one-to-one design sessions.' : 'Coach for small business owners.'],
@@ -131,7 +147,7 @@ return static function (string $type): array {
                 : [1, 'Coaching session', 45, 9500, 'online', 'One focused session on the thing that matters most this month.'],
         ],
         'bookings' => $bookings,
-    ] : [];
+    ] : []);
 
     // [person index, title, question, answers, state, days ago]
     $support = [
@@ -158,7 +174,7 @@ return static function (string $type): array {
         ],
     ];
     $support['everything'] = $support['online-store'];
-    $sample['tickets'] = $support[$type] ?? [];
+    $sample['tickets'] = $sample['tickets'] ?? $support[$type] ?? [];
 
     $sample['affiliates'] = $sellsProducts ? [
         // [person index, status, referrals: [order index, status]]
@@ -236,7 +252,8 @@ return static function (string $type): array {
     // or null for a table]. The page is a slug of the demo's own pages or [title, slug] for a page of its own. The
     // business's own (business-<type>.php) come first, then the ones made from what the demo already has.
     $sample['tables'] = $sample['tables'] ?? [];
-    if ($takesBookings) {
+    // The price list of the booking types, unless the business has its own fees table ('price_list' false).
+    if ($takesBookings && ($sample['price_list'] ?? true)) {
         $sample['tables'][] = [
             !empty($sample['pages']['services']) ? 'services' : 'about',
             'Price list',

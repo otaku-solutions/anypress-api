@@ -98,7 +98,8 @@ $saved['submitButton']['settings']['button_ui']['text'] = $plan['button'];
 $form->form_fields = wp_json_encode($saved);
 $form->save();
 
-// FluentCRM's feed on the form: every client goes on the list, tagged by what they need ("Family Law", ...).
+// FluentCRM's feed on the form: every client becomes a contact, tagged by what they need ("Family Law", ...). No list:
+// the form asks no newsletter consent.
 $tags = [];
 if (defined('FLUENTCRM')) {
     foreach ($areas as [$area]) {
@@ -111,7 +112,7 @@ if (defined('FLUENTCRM')) {
         'email' => '{inputs.email}',
         'other_fields' => [['item_value' => '{inputs.phone}', 'label' => 'phone']],
         'company_fields' => [['item_value' => '', 'label' => '']],
-        'list_id' => (string) (\FluentCrm\App\Models\Lists::where('slug', 'newsletter')->value('id') ?: ''),
+        'list_id' => '',
         'tag_ids' => [],
         'tag_ids_selection_type' => 'routers',
         'tag_routers' => array_map(static fn ($area, $id) => ['field' => 'need', 'operator' => '=', 'value' => $area, 'input_value' => (string) $id], array_keys($tags), $tags),

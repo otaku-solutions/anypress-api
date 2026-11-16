@@ -149,6 +149,16 @@ if (class_exists(\FluentCommunity\App\Functions\Utility::class)) {
     ));
 }
 
+// FluentCommunity → Features → FluentEvent: events show in the portal (an Events page, and an Events tab in each space,
+// with its own calendar). Off by default; only FluentCommunity Pro can install FluentEvent from that screen, so the
+// template ships the plugin itself and turns the feature on here. The `events` slug is FluentCommunity's default.
+if (class_exists(\FluentCommunity\Modules\Integrations\Integrations::class)) {
+    \FluentCommunity\App\Functions\Utility::updateOption('_fluent_event_settings', array_merge(
+        \FluentCommunity\Modules\Integrations\Integrations::getFluentEventSettings(),
+        ['enable_fluent_event' => 'yes']
+    ));
+}
+
 // Fluent Forms. Global settings → Security: the honeypot and token checks, off by default.
 $forms = get_option('_fluentform_global_form_settings', []);
 $forms['misc'] = array_merge($forms['misc'] ?? [], ['honeypotStatus' => 'yes', 'tokenBasedProtectionStatus' => 'yes']);

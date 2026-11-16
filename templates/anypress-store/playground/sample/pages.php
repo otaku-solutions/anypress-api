@@ -171,6 +171,11 @@ if ($menu) {
     if (defined('FLUENT_COMMUNITY_PLUGIN_VERSION')) {
         $items .= '<!-- wp:navigation-link ' . wp_json_encode(['label' => __('Community'), 'url' => anypress_portal_url(), 'kind' => 'custom'], JSON_UNESCAPED_SLASHES) . ' /-->';
     }
+    // FluentEvent's Events page (events.php), with the public classes and meetups.
+    $events = class_exists('\\FluentEvent\\App\\Services\\EventPageService') ? \FluentEvent\App\Services\EventPageService::pageId('events_page_id') : 0;
+    if ($events) {
+        $items .= $link($events);
+    }
     foreach (['services', 'blog', 'about', 'contact'] as $slug) {
         if (!empty($ids[$slug])) {
             $items .= $link($ids[$slug]);

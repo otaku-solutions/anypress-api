@@ -112,6 +112,12 @@ return [
         'coupons' => [['Black Friday', 'MAKERS20', 'percentage', 20, 'Course sale'], ['Friend of a member', 'FRIEND10', 'percentage', 10, 'Member referrals']],
     ],
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
+    // Ninja Tables and Ninja Charts (data.php says how; the course outline comes from the course).
+    'tables' => [
+        ['about', 'Members each month', 'Makers in the circle at the end of each month.', ['Month' => 'text', 'Members' => 'number'], [
+            ['June', 640], ['July', 702], ['August', 768], ['September', 851], ['October', 947], ['November', 1062],
+        ], 'line'],
+    ],
     'pages' => [
         'products' => 'Join, or start with the course',
         'hero' => 'A community for people building a creative business. Learn to price, photograph and sell what you make, with makers who have done it.',

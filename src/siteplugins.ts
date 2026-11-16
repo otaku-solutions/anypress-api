@@ -19,6 +19,8 @@ const NAMES: Record<string, string> = {
   'fluent-affiliate': 'FluentAffiliate',
   'fluent-support': 'Fluent Support',
   'easy-code-manager': 'FluentSnippets',
+  'ninja-tables': 'Ninja Tables',
+  'ninja-charts': 'Ninja Charts',
   'seo-by-rank-math': 'Rank Math SEO',
   automatorwp: 'AutomatorWP',
   'wp-fusion-lite': 'WP Fusion Lite',

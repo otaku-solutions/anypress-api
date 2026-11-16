@@ -130,6 +130,17 @@ return [
     'video' => 'A weeknight dinner in 30 minutes',
     'snippet' => ['Recipe card print button', "add_filter('the_content', function (\$content) {\n    return is_single() ? \$content . '<p><a href=\"javascript:window.print()\">Print this recipe</a></p>' : \$content;\n});"],
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
+    // Ninja Tables and Ninja Charts (data.php says how): the sponsor rates and the readership they ask about.
+    'tables' => [
+        ['services', 'Sponsorship packages', 'What a sponsor gets, and what it costs. Every recipe is cooked and photographed by us.', ['Package' => 'text', 'What you get' => 'text', 'Price ($)' => 'number'], [
+            ['Newsletter sponsorship', 'A short, clearly marked note at the top of one issue of The Weeknight Letter.', 400],
+            ['Sponsored recipe', 'A recipe developed around your product, photographed by Jules and shared with the newsletter.', 1200],
+            ['Recipe series', 'Three sponsored recipes over a month, each in the newsletter, with a video of one of them.', 3200],
+        ], null],
+        ['services', 'Readers each month', 'People who read at least one recipe, over the last six months.', ['Month' => 'text', 'Readers' => 'number'], [
+            ['June', 18400], ['July', 19900], ['August', 21300], ['September', 24800], ['October', 27200], ['November', 31500],
+        ], 'line'],
+    ],
     'pages' => [
         'hero' => 'Real dinners for busy weeknights. Tested recipes that take thirty minutes or less, from a family kitchen in Portland.',
         'buttons' => [['Get the recipes', 'blog'], ['Join the newsletter', '#newsletter']],

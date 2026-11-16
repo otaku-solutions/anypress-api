@@ -382,8 +382,9 @@ add_action('init', function () {
             $before = get_current_user_id();
             wp_set_current_user((int) ($admins[0] ?? 0));
             try {
-                $menu = rest_do_request(new \WP_REST_Request('GET', '/fluent-community/v2/settings/menu-settings'))->get_data();
-                $groups = is_array($menu['menuSettings'] ?? null) ? $menu['menuSettings'] : [];
+                $read = rest_do_request(new \WP_REST_Request('GET', '/fluent-community/v2/settings/menu-settings'));
+                $menu = $read->get_data();
+                $groups = !$read->is_error() && is_array($menu['menuSettings'] ?? null) ? $menu['menuSettings'] : [];
                 $found = false;
                 foreach ($groups['mainMenuItems'] ?? [] as $key => $item) {
                     if (($item['slug'] ?? '') === 'fluent_events') {
@@ -391,15 +392,25 @@ add_action('init', function () {
                         $found = true;
                     }
                 }
+                $saved = false;
                 if ($found) {
                     $save = new \WP_REST_Request('POST', '/fluent-community/v2/settings/menu-settings');
                     $save->set_header('content-type', 'application/json');
                     $save->set_body((string) wp_json_encode(['menuSettings' => $groups]));
-                    rest_do_request($save);
+                    $saved = !rest_do_request($save)->is_error();
                 }
             } finally {
                 wp_set_current_user($before);
             }
+            // Not saved: tried again on the next two page loads, then left to the owner (FluentCommunity > Menu Settings).
+            if (!$saved) {
+                $tries = (int) get_option('anypress_fluent_event_menu_tries', 0) + 1;
+                update_option('anypress_fluent_event_menu_tries', $tries, false);
+                if ($tries < 3) {
+                    return false;
+                }
+            }
+            delete_option('anypress_fluent_event_menu_tries');
         },
         // FluentHub: every Fluent plugin opens in its one workspace, with one menu and no separate app headers.
         'fluent-toolkit' => function () {
@@ -410,7 +421,10 @@ add_action('init', function () {
     ];
     foreach ($due as $plugin) {
         try {
-            $steps[$plugin]();
+            // A step that answers false didn't finish and runs again on a later page load.
+            if ($steps[$plugin]() === false) {
+                continue;
+            }
         } catch (\Throwable $e) {
             error_log("AnyPress store: owner details for $plugin: " . $e->getMessage()); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- one plugin's setup failing must not stop the rest; the store's log is where it is looked into.
         }

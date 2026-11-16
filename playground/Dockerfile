@@ -2,7 +2,7 @@
 # static files. The dashboard's demo pages (/demo) embed it.
 FROM caddy:2.10-alpine
 ARG PLAYGROUND=playground-v3.1.64
-ADD https://github.com/hamchowderr/waas-provisioning-api/releases/download/${PLAYGROUND}/playground.tar.gz /tmp/playground.tar.gz
+ADD https://github.com/otaku-solutions/anypress-api/releases/download/${PLAYGROUND}/playground.tar.gz /tmp/playground.tar.gz
 RUN mkdir -p /srv && tar -xzf /tmp/playground.tar.gz -C /srv && rm /tmp/playground.tar.gz
 # The AnyPress name and ribbon on the browser tab, a saved bookmark and a shared link, in place of Playground's.
 COPY brand/ /srv/

@@ -58,11 +58,11 @@ fluent-event 1.0.1 bbd57d5d347def62be8840a3c4e1c7d02d1f3ab34c7bce6053a0aa1c616d5
 OFF_VENDORED="
 fluent-cart-migrator 1.1.0-beta 69de5e9033dfad69ccbf4a7c4ece96d5e28f1fc23bb4a2904fea1db653b560ff
 "
-# AnyPress Blocks (the Popup block and more): a release of github.com/hamchowderr/anypress-blocks, pinned by version
+# AnyPress Blocks (the Popup block and more): a release of github.com/otaku-solutions/anypress-blocks, pinned by version
 # and checksum (from the release's SHA256SUMS). Active on every site type (roles.json).
 BLOCKS_VERSION=${BLOCKS_VERSION:-0.4.3}
 BLOCKS_SHA256=${BLOCKS_SHA256:-b5c77f49f37908bc545b79db247860330bdc40b5e2211a94ad66d7d2c22915e1}
-# The AnyPress block theme: a release of github.com/hamchowderr/anypress-theme, pinned in theme.sh.
+# The AnyPress block theme: a release of github.com/otaku-solutions/anypress-theme, pinned in theme.sh.
 THEME=anypress
 # shellcheck source=theme.sh
 . "$(dirname "$0")/theme.sh"
@@ -109,7 +109,7 @@ while read -r slug version sha; do
     fetch "https://downloads.wordpress.org/plugin/$slug.$version.zip" "$sha" "$WORK/downloads/$slug.$version.zip"
 done <<<"$PLUGINS$OFF_PLUGINS"
 anypress_theme_fetch "$WORK/downloads"
-fetch "https://github.com/hamchowderr/anypress-blocks/releases/download/v$BLOCKS_VERSION/anypress-blocks.zip" "$BLOCKS_SHA256" "$WORK/downloads/anypress-blocks.$BLOCKS_VERSION.zip"
+fetch "https://github.com/otaku-solutions/anypress-blocks/releases/download/v$BLOCKS_VERSION/anypress-blocks.zip" "$BLOCKS_SHA256" "$WORK/downloads/anypress-blocks.$BLOCKS_VERSION.zip"
 while read -r slug version sha; do
     [ -n "$slug" ] || continue
     echo "$sha  $HERE/plugins/$slug-$version.zip" | sha256sum -c --quiet || { echo "checksum mismatch: plugins/$slug-$version.zip" >&2; exit 1; }

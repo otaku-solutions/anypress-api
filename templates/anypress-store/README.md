@@ -7,8 +7,8 @@ Plugins are listed in the order AnyPress shows them everywhere.
 | | |
 |---|---|
 | WordPress | 7.1.4 for the build; stores run `wordpress:7.1-php8.3-apache` (version `7.1`, PHP `8.3`) |
-| Theme | The [AnyPress theme](https://github.com/hamchowderr/anypress-theme) (a release pinned by version and checksum in [`theme.sh`](theme.sh)), a block theme with 16 kits (a style, sections and a whole website for one kind of business) and AnyPress Blocks (32 sections that work with any kit); the only theme installed. Stores made from versions before v1.1.0 run [Ollie](https://wordpress.org/themes/ollie/) |
-| Plugins | AnyPress Client (built from [`waas-plugins`](https://github.com/hamchowderr/waas-plugins) `packages/anypress-client` at the release in [`CLIENT_VERSION`](CLIENT_VERSION)) and these free wordpress.org plugins, all active: |
+| Theme | The [AnyPress theme](https://github.com/otaku-solutions/anypress-theme) (a release pinned by version and checksum in [`theme.sh`](theme.sh)), a block theme with 16 kits (a style, sections and a whole website for one kind of business) and AnyPress Blocks (32 sections that work with any kit); the only theme installed. Stores made from versions before v1.1.0 run [Ollie](https://wordpress.org/themes/ollie/) |
+| Plugins | AnyPress Client (built from [`anypress-plugins`](https://github.com/otaku-solutions/anypress-plugins) `packages/anypress-client` at the release in [`CLIENT_VERSION`](CLIENT_VERSION)) and these free wordpress.org plugins, all active: |
 
 | Plugin | Slug | Version |
 |---|---|---|
@@ -48,7 +48,7 @@ The FluentCart Migrator add-on 1.1.0-beta (`fluent-cart-migrator`, FluentCart's 
 in [`plugins/`](plugins/) the same way and installed switched off, so it doesn't load on every page. AnyPress Client's shop
 switch (`wp anypress shop switch`) turns it on when it runs.
 
-And [AnyPress Blocks](https://github.com/hamchowderr/anypress-blocks) (`anypress-blocks`), our own blocks plugin: the Popup block
+And [AnyPress Blocks](https://github.com/otaku-solutions/anypress-blocks) (`anypress-blocks`), our own blocks plugin: the Popup block
 for signups, offers and booking forms, and Carousel, Counter, Map, Countdown, Before and After, Star Rating, Notice Bar,
 Phone Bar, Location Finder and Age Check blocks (0.4.3). A release is pinned by version and checksum in [`build.sh`](build.sh)
 (`BLOCKS_VERSION`, `BLOCKS_SHA256`) and it is active on every site type.
@@ -233,7 +233,7 @@ The files are made from `build.sh`, `theme.sh` and `roles.json` by `node templat
 ## Build and publish
 
 ```sh
-templates/anypress-store/build.sh ../waas-plugins
+templates/anypress-store/build.sh ../anypress-plugins
 WAAS_API_URL=https://api.example.com WAAS_KEY=<product key> WAAS_SECRET=<secret> templates/anypress-store/publish.sh v1.0.0 --production
 ```
 
@@ -252,4 +252,4 @@ it is Done and, with `--production`, makes it the production version. Set `WAAS_
   home and site URL `https://store.template.invalid`. The agent imports it and rewrites that host to the store's domain
   (`wp search-replace`), so it must be a bare `https` host without a port.
 - `wp-content/`: plugins, theme and an empty `uploads`. WordPress core is not included; it comes from the image.
-- `waas-template.json`: what went into the build (versions, waas-plugins commit, build time). Informational.
+- `waas-template.json`: what went into the build (versions, anypress-plugins commit, build time). Informational.

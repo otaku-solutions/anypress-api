@@ -4,8 +4,8 @@ Every AnyPress repository lists the versions it pins in `.github/pins.json`: the
 installs, the wordpress.org plugins and WordPress release it builds on, the zips a Playground preview loads. Two things
 keep them current:
 
-- **CI** runs this folder's action (`uses: hamchowderr/waas-provisioning-api/.github/pins@main`). It fails when a pin is
-  behind one of our own releases (`github:hamchowderr/...`) and warns when a third-party pin is behind.
+- **CI** runs this folder's action (`uses: otaku-solutions/anypress-api/.github/pins@main`). It fails when a pin is
+  behind one of our own releases (`github:otaku-solutions/...`) and warns when a third-party pin is behind.
 - **Update pins** (`.github/workflows/pins.yml`, every hour) moves every pin to its newest release, with its checksum,
   opens a pull request, starts CI on it and merges it once CI passes.
 
@@ -25,7 +25,7 @@ node .github/pins/pins.mjs update   # move them
   "pins": [
     {
       "name": "AnyPress Blocks",
-      "source": "github:hamchowderr/anypress-blocks",
+      "source": "github:otaku-solutions/anypress-blocks",
       "asset": "anypress-blocks.zip",
       "places": [
         { "file": "templates/anypress-store/build.sh", "match": "BLOCKS_VERSION=\\$\\{BLOCKS_VERSION:-(?<version>[^}]+)\\}\\nBLOCKS_SHA256=\\$\\{BLOCKS_SHA256:-(?<sha>[0-9a-f]{64})\\}" }

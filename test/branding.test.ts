@@ -211,9 +211,9 @@ describe('demo page zips (public)', () => {
     expect(await demoZip('anypress-blocks-v9.9.9.zip', download)).toBeNull();
     for (const bad of ['anypress-theme-main.zip', 'other-v1.0.0.zip', '../anypress-theme-v1.0.0.zip', 'anypress-theme-v1.0.0.zip?x']) expect(await demoZip(bad, download)).toBeNull();
     expect(urls).toEqual([
-      'https://github.com/hamchowderr/anypress-theme/releases/download/v0.10.0/anypress.zip',
-      'https://github.com/hamchowderr/anypress-blocks/releases/download/v0.4.0/anypress-blocks.zip',
-      'https://github.com/hamchowderr/anypress-blocks/releases/download/v9.9.9/anypress-blocks.zip',
+      'https://github.com/otaku-solutions/anypress-theme/releases/download/v0.10.0/anypress.zip',
+      'https://github.com/otaku-solutions/anypress-blocks/releases/download/v0.4.0/anypress-blocks.zip',
+      'https://github.com/otaku-solutions/anypress-blocks/releases/download/v9.9.9/anypress-blocks.zip',
     ]);
     const res = await app.request('/branding/demo-files/not-a-zip.zip');
     expect(res.status).toBe(404);
@@ -256,8 +256,8 @@ describe('newest demo zips (public)', () => {
     // GitHub is asked once per repository while the tag is fresh, and each release is downloaded once.
     expect(asked).toEqual(['anypress-theme', 'anypress-blocks']);
     expect(urls).toEqual([
-      'https://github.com/hamchowderr/anypress-theme/releases/download/v0.21.0/anypress.zip',
-      'https://github.com/hamchowderr/anypress-blocks/releases/download/v0.5.1/anypress-blocks.zip',
+      'https://github.com/otaku-solutions/anypress-theme/releases/download/v0.21.0/anypress.zip',
+      'https://github.com/otaku-solutions/anypress-blocks/releases/download/v0.5.1/anypress-blocks.zip',
     ]);
   });
 });

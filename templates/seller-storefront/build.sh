@@ -86,7 +86,7 @@ while read -r slug version sha; do
     fetch "https://downloads.wordpress.org/plugin/$slug.$version.zip" "$sha" "$WORK/downloads/$slug.$version.zip"
 done <<<"$PLUGINS"
 anypress_theme_fetch "$WORK/downloads"
-fetch "https://github.com/hamchowderr/anypress-blocks/releases/download/v$BLOCKS_VERSION/anypress-blocks.zip" "$BLOCKS_SHA256" "$WORK/downloads/anypress-blocks.$BLOCKS_VERSION.zip"
+fetch "https://github.com/otaku-solutions/anypress-blocks/releases/download/v$BLOCKS_VERSION/anypress-blocks.zip" "$BLOCKS_SHA256" "$WORK/downloads/anypress-blocks.$BLOCKS_VERSION.zip"
 
 echo "== WordPress $WP_VERSION"
 unzip -q "$WORK/downloads/wordpress.zip" -d "$WORK"

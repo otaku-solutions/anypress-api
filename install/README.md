@@ -5,8 +5,8 @@ Stage 1 of the [self-hosting guide](../docs/self-hosting.md#stage-1-one-vps-with
 your domains are on Cloudflare. A short overview is on [anypress.io/self-host](https://anypress.io/self-host).
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/install/anypress-install.sh
-curl -fsSL https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/install/anypress.env.example -o /root/anypress.env
+curl -fsSLO https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/install/anypress-install.sh
+curl -fsSL https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/install/anypress.env.example -o /root/anypress.env
 nano /root/anypress.env        # your domains, email and storage bucket, and optionally email keys
 sudo bash anypress-install.sh
 ```
@@ -20,8 +20,8 @@ With an API token from your server provider, the installer can make the server f
 it. It runs on your computer (Linux, macOS or WSL, with `curl`, `jq` and `openssl`):
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/install/anypress-install.sh
-curl -fsSL https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/install/anypress.env.example -o anypress.env
+curl -fsSLO https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/install/anypress-install.sh
+curl -fsSL https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/install/anypress.env.example -o anypress.env
 nano anypress.env              # the answers above, plus your provider's token
 bash anypress-install.sh hostinger      # or: hetzner, digitalocean
 ```
@@ -57,7 +57,7 @@ stores; put stores like that on another provider.
 5. Deploys the provisioning API on `api.<brand domain>` with generated secrets, and waits for `/health`.
 6. Makes an API key for your storefront.
 7. Publishes the store template and the storefront template from the newest
-   [templates release](https://github.com/hamchowderr/waas-provisioning-api/releases) (checksums checked), and makes
+   [templates release](https://github.com/otaku-solutions/anypress-api/releases) (checksums checked), and makes
    each the production version. New stores are made from the store template.
 8. Builds your storefront: a WordPress site with AnyPress Host and FluentCart, already connected to the API, with you as
    its administrator.

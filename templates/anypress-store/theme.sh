@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The AnyPress theme the store template installs: a release of github.com/hamchowderr/anypress-theme,
+# The AnyPress theme the store template installs: a release of github.com/otaku-solutions/anypress-theme,
 # pinned by version and checksum. Bump both (from the release's SHA256SUMS) to build on a newer theme.
 #
 #   templates/anypress-store/theme.sh fetch <dir>   # unpack the pinned theme into <dir>/anypress
@@ -7,7 +7,7 @@
 #                                                   # starter pages (mu-plugins/anypress-patterns.php) added
 #
 # build.sh sources this file for THEME_VERSION and anypress_theme_fetch.
-THEME_REPO=hamchowderr/anypress-theme
+THEME_REPO=otaku-solutions/anypress-theme
 THEME_VERSION=${THEME_VERSION:-0.23.2}
 THEME_SHA256=${THEME_SHA256:-ceaf0473e3811f6ea54b885f829b30836717cf03c53a6d4d892f8a98310156df}
 

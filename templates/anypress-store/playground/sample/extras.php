@@ -48,8 +48,10 @@ $videos = [
     'everything' => ['How our prints are made', 'https://upload.wikimedia.org/wikipedia/commons/8/83/Tirage_blouse_%28s%C3%A9rigraphie%29.webm', '"Tirage blouse (sérigraphie)" by 4MAPS, CC BY-SA 4.0.'],
     'highlevel' => ['A day on the roof', 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Workers_on_the_roof.webm', '"Workers on the roof" by Eric Harrison, CC BY-SA 2.0.'],
 ];
-if (defined('FLUENT_PLAYER') && isset($videos[$sample['type']])) {
-    [$title, $src, $credit] = $videos[$sample['type']];
+// An industry demo brings its own video ('clip'), or none (null).
+$clip = array_key_exists('clip', $sample) ? $sample['clip'] : ($videos[$sample['type']] ?? null);
+if (defined('FLUENT_PLAYER') && $clip) {
+    [$title, $src, $credit] = $clip;
     anypress_sample_api('POST', '/fluent-player/v2/media', [
         'settings' => [
             'title' => $title, 'description' => 'Video: ' . $credit . ' From Wikimedia Commons.', 'preset_slug' => 'default', 'src' => $src, 'provider' => 'external', 'viewType' => 'video', 'mediaType' => 'video', 'post_status' => 'publish'],

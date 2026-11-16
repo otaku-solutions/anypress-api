@@ -116,6 +116,11 @@ if (defined('FLUENT_BOOKING_VERSION')) {
     $booking = $services
         ? anypress_embed(__('Pick a time'), '[fluent_booking_team event_ids="' . implode(',', $services) . '"]', 'book')
         : (function_exists('anypress_booking') ? anypress_booking() : '');
+    // A business that books through one form (routing.php): the form, which asks first and then books the right host.
+    $routed = !empty($sample['routing']) ? $form([$sample['routing']['title']]) : 0;
+    if ($routed) {
+        $booking = anypress_section('Book', anypress_titles($sample['routing']['title'], $sample['routing']['intro']) . '<!-- wp:shortcode -->[fluentform id="' . $routed . '"]<!-- /wp:shortcode -->', 'tint', '48rem', 'book');
+    }
 }
 $writers = array_map(static fn ($w) => [$w[0] . ' ' . $w[1], $w[2]], $sample['writers'] ?? []);
 
@@ -212,3 +217,4 @@ if ($menu) {
     wp_update_post(['ID' => $menu[0]->ID, 'post_content' => $items]);
     update_post_meta($menu[0]->ID, '_anypress_sample', md5((string) get_post_field('post_content', $menu[0]->ID)));
 }
+

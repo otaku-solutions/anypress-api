@@ -228,6 +228,10 @@ After the set-up, each demo becomes a sample business running for about six mont
 - **Automations and sign-ins:** AutomatorWP automations that are switched on (the team hears when a post goes live; new members, buyers and clients are tagged in FluentCRM) with months of runs in their log, and a FluentAuth log of two months of sign-ins, a few wrong passwords and one blocked bot.
 - **Video:** a video of the business's kind of work in Fluent Player's library, played from Wikimedia Commons (public domain or CC BY-SA, credited in its description).
 
+**Industry demos** set up one site type for a trade, with its own business in `playground/sample/business-<site type>-<industry>.php` and its blueprint in `playground/<site type>-<industry>.json` (listed in `blueprints.mjs`):
+
+- **Law Office** (`bookings-law-office.json`): a four-lawyer firm in the Ledger kit. One Fluent Forms consultation form asks what the client needs, shows only that practice area's questions, the other people involved (for the conflict check) and a disclaimer, then books the right lawyer with a FluentBooking field per practice area; its FluentCRM feed tags each client by practice area. A flat-fee table and a consultations chart, and a paid strategy session through FluentCart.
+
 Rank Math is set up for the business and there is an example snippet. The loader says what it is adding while it works ("Taking six months of orders"). A real store never gets any of this. "Make this my site" carries only pages, styles and menus to the store, and leaves behind the sample pages and menu the visitor did not change, so the store starts from its own.
 
 The files are made from `build.sh`, `theme.sh` and `roles.json` by `node templates/anypress-store/playground/blueprints.mjs`; CI fails when one is out of date, and the Update pins workflow remakes them when it moves a pin.

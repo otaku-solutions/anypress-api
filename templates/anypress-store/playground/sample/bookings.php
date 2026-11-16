@@ -50,7 +50,7 @@ foreach ($plan['hosts'] as $h => [$who, $bio]) {
         $value['weekly_schedules'] = $week($h === 0);
         $value['date_overrides'] = [gmdate('Y-m-d', strtotime('+' . (8 + $h) . ' days')) => []];
         $hours->value = $value;
-        $hours->key = $h === 0 ? 'Studio hours' : 'Coaching hours';
+        $hours->key = $plan['hours'][$h] ?? ($h === 0 ? 'Studio hours' : 'Coaching hours');
         $hours->save();
     }
     $mine = array_values(array_filter($plan['events'], static fn ($e) => $e[0] === $h));
@@ -61,7 +61,7 @@ foreach ($plan['hosts'] as $h => [$who, $bio]) {
             'description' => $about . ($price ? ' $' . number_format($price / 100) . ', paid at the session.' : ' Free.'),
             'duration' => $minutes,
             'location_type' => $location,
-            'location_settings' => [['type' => $location, 'title' => $where === 'in_person' ? '14 Willow Lane, Suite 2' : '', 'display_on_booking' => '']],
+            'location_settings' => [['type' => $location, 'title' => $where === 'in_person' ? ($plan['address'] ?? '14 Willow Lane, Suite 2') : '', 'display_on_booking' => '']],
             'status' => 'active',
         ];
         if ($n === 0) {
@@ -87,7 +87,7 @@ foreach ($plan['hosts'] as $h => [$who, $bio]) {
 }
 
 $made = [];
-$notes = ['Lower back has been tight since the move.', 'First time, a little nervous!', 'Would like to focus on pricing.', '', 'Running 5 minutes late is OK?', ''];
+$notes = $plan['notes'] ?? ['Lower back has been tight since the move.', 'First time, a little nervous!', 'Would like to focus on pricing.', '', 'Running 5 minutes late is OK?', ''];
 foreach ($plan['bookings'] as $n => [$event, $who, $daysAhead, $hour, $status]) {
     $slot = $events[$event] ?? null;
     if (!$slot) {
@@ -128,10 +128,10 @@ foreach ($plan['bookings'] as $n => [$event, $who, $daysAhead, $hour, $status]) 
     $booking->updated_at = $status === 'scheduled' ? $booked : gmdate('Y-m-d H:i:s', min(time() - 600, $start + 2 * HOUR_IN_SECONDS));
     $booking->status = $status;
     if ($status === 'cancelled') {
-        $booking->internal_note = 'Cancelled by the client: travelling that week.';
+        $booking->internal_note = $plan['cancelled'] ?? 'Cancelled by the client: travelling that week.';
     }
     if ($status === 'no_show') {
-        $booking->internal_note = 'Did not arrive. Sent a friendly note to rebook.';
+        $booking->internal_note = $plan['missed'] ?? 'Did not arrive. Sent a friendly note to rebook.';
     }
     $booking->save();
     $made[] = [$booking, $slot, $who, $n, $status, $booked];
@@ -156,7 +156,7 @@ if (defined('FLUENTCART_VERSION')) {
         if (!$variant) {
             continue;
         }
-        wp_set_object_terms((int) $made_['variant']['post_id'], ['Sessions'], 'product-categories', false);
+        wp_set_object_terms((int) $made_['variant']['post_id'], [$plan['category'] ?? 'Sessions'], 'product-categories', false);
         anypress_sample_api('POST', "/fluent-booking/v2/calendars/{$slot->calendar_id}/events/{$slot->id}/cart-settings", [
             'settings' => ['enabled' => 'yes', 'multi_payment_enabled' => 'no', 'cart_product_id' => $variant],
         ]);

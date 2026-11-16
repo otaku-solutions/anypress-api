@@ -22,6 +22,12 @@ const CLIENT_ZIP = `${ZIPS}/anypress-client.zip`;
 /** The site types AnyPress sells (roles.json; `store` is the older name of `everything` and is not sold). */
 export const SOLD_TYPES = ['website', 'bookings', 'online-store', 'community', 'everything', 'highlevel'];
 
+/**
+ * Industry demos: a site type set up for one trade (sample/business-<type>-<variant>.php), written as
+ * <type>-<variant>.json and opened on anypress.io/try like a kit's example site.
+ */
+const VARIANTS = [{ type: 'bookings', variant: 'law-office', title: 'Law Office', business: 'a law office', booking: 'Booking three months of consultations' }];
+
 const build = readFileSync(resolve(TEMPLATE, 'build.sh'), 'utf8');
 const theme = readFileSync(resolve(TEMPLATE, 'theme.sh'), 'utf8');
 const roles = JSON.parse(readFileSync(resolve(TEMPLATE, 'roles.json'), 'utf8'));
@@ -30,9 +36,9 @@ const roles = JSON.parse(readFileSync(resolve(TEMPLATE, 'roles.json'), 'utf8'));
  * adding while the visitor waits. More runs would say more but each boots WordPress again, which costs seconds.
  */
 const SAMPLE_STEPS = [
-  { parts: ['mail', 'blog', 'forms'], caption: 'Writing six months of blog posts' },
+  { parts: ['mail', 'look', 'blog', 'forms'], caption: 'Writing six months of blog posts' },
   {
-    parts: ['shop', 'bookings', 'support', 'affiliates', 'community', 'events'],
+    parts: ['shop', 'bookings', 'routing', 'support', 'affiliates', 'community', 'events'],
     types: ['bookings', 'online-store', 'community', 'everything'],
     caption: (type) =>
       ({
@@ -97,8 +103,8 @@ foreach (get_posts(['post_type' => 'page', 'numberposts' => -1, 'fields' => 'ids
 foreach (['blogname' => 'My Store', 'timezone_string' => 'UTC', 'gmt_offset' => 0, 'date_format' => 'F j, Y', 'time_format' => 'H:i', 'default_comment_status' => 'closed', 'default_ping_status' => 'closed', 'default_pingback_flag' => 0, 'blog_public' => 0, 'users_can_register' => 0] as $name => $value) update_option($name, $value);
 `;
 
-/** The blueprint for one site type. */
-export function blueprint(type) {
+/** The blueprint for one site type, or one of its industry demos (VARIANTS). */
+export function blueprint(type, variant = null) {
   // Every plugin the template installs and turns on, as build.sh does, so its presets and CRM set-up run as they do there;
   // AnyPress Client then turns off the ones this site type doesn't list. The MCP Adapter is on on every store;
   // LeadConnector only matters on HighLevel sites.
@@ -110,9 +116,9 @@ export function blueprint(type) {
   return {
     $schema: 'https://playground.wordpress.net/blueprint-schema.json',
     meta: {
-      title: `AnyPress: ${roles[type].title}`,
+      title: `AnyPress: ${roles[type].title}${variant ? ` for ${variant.business}` : ''}`,
       author: 'otaku-solutions',
-      description: `A new AnyPress ${roles[type].title.toLowerCase()} site, as a store of this type starts: the AnyPress theme, its plugins and settings. Runs in your browser; nothing is saved.`,
+      description: `A new AnyPress ${roles[type].title.toLowerCase()} site${variant ? ` set up for ${variant.business}` : ', as a store of this type starts'}: the AnyPress theme, its plugins and settings. Runs in your browser; nothing is saved.`,
       categories: ['AnyPress'],
     },
     landingPage: '/',
@@ -159,8 +165,8 @@ export function blueprint(type) {
       ...sample,
       ...SAMPLE_STEPS.filter((s) => !s.types || s.types.includes(type)).map((s) => ({
         step: 'runPHP',
-        code: `<?php define('ANYPRESS_SAMPLE_PARTS', ${JSON.stringify(s.parts)}); require '/wordpress/anypress-sample/run.php';`,
-        progress: { caption: typeof s.caption === 'function' ? s.caption(type) : s.caption },
+        code: `<?php define('ANYPRESS_SAMPLE_PARTS', ${JSON.stringify(s.parts)});${variant ? ` define('ANYPRESS_SAMPLE_VARIANT', '${variant.variant}');` : ''} require '/wordpress/anypress-sample/run.php';`,
+        progress: { caption: (s.types && variant?.booking) || (typeof s.caption === 'function' ? s.caption(type) : s.caption) },
       })),
     ],
   };
@@ -169,16 +175,16 @@ export function blueprint(type) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const check = process.argv.includes('--check');
   let stale = 0;
-  for (const type of SOLD_TYPES) {
-    const path = resolve(HERE, `${type}.json`);
-    const json = `${JSON.stringify(blueprint(type), null, '\t')}\n`;
+  for (const [name, type, variant] of [...SOLD_TYPES.map((t) => [t, t, null]), ...VARIANTS.map((v) => [`${v.type}-${v.variant}`, v.type, v])]) {
+    const path = resolve(HERE, `${name}.json`);
+    const json = `${JSON.stringify(blueprint(type, variant), null, '\t')}\n`;
     let current = '';
     try {
       current = readFileSync(path, 'utf8');
     } catch {}
     if (current === json) continue;
     if (check) {
-      console.error(`${type}.json is out of date: run node templates/anypress-store/playground/blueprints.mjs`);
+      console.error(`${name}.json is out of date: run node templates/anypress-store/playground/blueprints.mjs`);
       stale++;
     } else writeFileSync(path, json);
   }

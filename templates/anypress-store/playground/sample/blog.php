@@ -67,7 +67,7 @@ foreach ($blog['posts'] as $i => [$title, $category, $writer, , $text]) {
         continue;
     }
     $posted[] = [$id, $daysAgo, $writers[$writer] ?? $writers[0]];
-    $photo = anypress_sample_image($sample['type'] . '/' . str_pad((string) $i, 2, '0', STR_PAD_LEFT) . '.webp', $id, $title);
+    $photo = anypress_sample_image($sample['images'] . '/' . str_pad((string) $i, 2, '0', STR_PAD_LEFT) . '.webp', $id, $title);
     if ($photo) {
         set_post_thumbnail($id, $photo);
     }
@@ -129,7 +129,7 @@ foreach ($blog['scheduled'] ?? [] as $s => [$title, $category, $writer, , $text]
         'post_date' => get_date_from_gmt(anypress_sample_when(-6 - $s, 13)),
         'post_category' => isset($categories[$category]) ? [$categories[$category]] : [],
     ]);
-    $photo = $id ? anypress_sample_image($sample['type'] . "/s$s.webp", $id, $title) : 0;
+    $photo = $id ? anypress_sample_image($sample['images'] . "/s$s.webp", $id, $title) : 0;
     if ($photo) {
         set_post_thumbnail($id, $photo);
     }

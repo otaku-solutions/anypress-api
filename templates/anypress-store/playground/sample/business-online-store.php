@@ -99,6 +99,15 @@ return [
     'video' => 'How we make a hoodie',
     'snippet' => ['Free shipping notice', "add_action('wp_body_open', function () {\n    echo '<p class=\"shipping-notice\">Free shipping over \$75</p>';\n});"],
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
+    // Ninja Tables and Ninja Charts (data.php says how): the size guide shoppers ask for, and where the money goes.
+    'tables' => [
+        [['Size guide', 'size-guide'], 'Size guide', 'Measurements of the clothes themselves, in inches, laid flat. Between two sizes? Take the larger one.', ['Size' => 'text', 'Chest' => 'number', 'Waist' => 'number', 'Length' => 'number'], [
+            ['XS', 34, 28, 26], ['S', 36, 30, 27], ['M', 39, 33, 28], ['L', 42, 36, 29], ['XL', 45, 39, 30], ['XXL', 48, 42, 31],
+        ], null],
+        ['about', 'Where your $48 goes', 'What one of our $48 shirts pays for, to the dollar.', ['Part' => 'text', 'Dollars' => 'number'], [
+            ['Fabric', 14], ['Sewing, paid fairly', 12], ['Shipping and packing', 6], ['Running the shop', 9], ['What we keep', 7],
+        ], 'doughnut'],
+    ],
     'pages' => [
         // The hero's photo: the blog post whose photo it uses.
         'photo' => 15,

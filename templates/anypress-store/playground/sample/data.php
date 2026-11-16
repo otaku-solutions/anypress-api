@@ -232,5 +232,30 @@ return static function (string $type): array {
         ],
     ] : [];
 
+    // Ninja Tables and Ninja Charts (tables.php): [page, title, text, columns (name => text or number), rows, chart type
+    // or null for a table]. The page is a slug of the demo's own pages or [title, slug] for a page of its own. The
+    // business's own (business-<type>.php) come first, then the ones made from what the demo already has.
+    $sample['tables'] = $sample['tables'] ?? [];
+    if ($takesBookings) {
+        $sample['tables'][] = [
+            !empty($sample['pages']['services']) ? 'services' : 'about',
+            'Price list',
+            'Every session, how long it is and what it costs. Book any of them online.',
+            ['Session' => 'text', 'Minutes' => 'number', 'Price ($)' => 'number'],
+            array_map(static fn ($e) => [$e[1], $e[2], $e[3] / 100], $sample['bookings']['events']),
+            null,
+        ];
+    }
+    if ($hasCommunity) {
+        $outline = [];
+        foreach ($sample['community']['course']['sections'] as $section) {
+            foreach ($section[1] as $lesson) {
+                $outline[] = [strtok($section[0], ':'), $lesson[0], $lesson[1]];
+            }
+        }
+        $sample['tables'][] = ['about', $sample['community']['course']['title'], 'The course, lesson by lesson. Members start any time and go at their own pace.', ['Week' => 'text', 'Lesson' => 'text', 'What you do' => 'text'], $outline, null];
+    }
+    $sample['tables'] = array_map(static fn ($t) => array_combine(['page', 'title', 'text', 'columns', 'rows', 'chart'], $t), $sample['tables']);
+
     return $sample;
 };

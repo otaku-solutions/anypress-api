@@ -101,8 +101,8 @@ return [
     // The public pages: [section title, items] and buttons as [label, page slug, '#anchor' or 'portal'].
     // Ninja Tables and Ninja Charts (data.php says how): the size guide shoppers ask for, and where the money goes.
     'tables' => [
-        [['Size guide', 'size-guide'], 'Size guide', 'Measurements of the clothes themselves, in inches, laid flat. Between two sizes? Take the larger one.', ['Size' => 'text', 'Chest' => 'number', 'Waist' => 'number', 'Length' => 'number'], [
-            ['XS', 34, 28, 26], ['S', 36, 30, 27], ['M', 39, 33, 28], ['L', 42, 36, 29], ['XL', 45, 39, 30], ['XXL', 48, 42, 31],
+        [['Size guide', 'size-guide'], 'Size guide', 'Measurements of the clothes themselves, in inches, laid flat: chest is armpit to armpit, length is top of the shoulder to the hem. Lay one you love flat and compare. Between two sizes? Take the larger one.', ['Size' => 'text', 'Chest' => 'number', 'Waist' => 'number', 'Length' => 'number'], [
+            ['XS', 17, 14, 26], ['S', 18, 15, 27], ['M', 19.5, 16.5, 28], ['L', 21, 18, 29], ['XL', 22.5, 19.5, 30], ['XXL', 24, 21, 31],
         ], null],
         ['about', 'Where your $48 goes', 'What one of our $48 shirts pays for, to the dollar.', ['Part' => 'text', 'Dollars' => 'number'], [
             ['Fabric', 14], ['Sewing, paid fairly', 12], ['Shipping and packing', 6], ['Running the shop', 9], ['What we keep', 7],

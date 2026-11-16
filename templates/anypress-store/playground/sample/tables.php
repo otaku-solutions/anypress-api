@@ -56,7 +56,8 @@ foreach ($sample['tables'] as $n => $table) {
             'data_source' => 'ninja_table',
             'table_id' => $id,
             'final_keys' => $keys,
-            'row' => ['number' => count($table['rows']), 'date_range' => '', 'pick_range' => 'false', 'pick_date' => 'false', 'order' => 'ASC'],
+            // Every row of the table ('0'), so a row the owner adds shows on the chart too.
+            'row' => ['number' => '0', 'date_range' => '', 'pick_range' => 'false', 'pick_date' => 'false', 'order' => 'ASC'],
             'options' => [
                 'chart' => ['width' => '600', 'responsive' => 'true', 'height' => '400', 'position' => 'center', 'backgroundColor' => '#ffffff', 'borderWidth' => '0', 'borderColor' => '#000000', 'borderRadius' => '0', 'fontSize' => '12', 'fontStyle' => 'normal', 'fontColor' => '#000000', 'fill' => 'origin'],
                 'animation' => 'linear',

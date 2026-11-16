@@ -12,15 +12,15 @@
     "api-client",
     "typescript"
   ],
-  "homepage": "https://github.com/hamchowderr/waas-provisioning-api/tree/main/sdk/typescript#readme",
+  "homepage": "https://github.com/otaku-solutions/anypress-api/tree/main/sdk/typescript#readme",
   "bugs": {
-    "url": "https://github.com/hamchowderr/waas-provisioning-api/issues"
+    "url": "https://github.com/otaku-solutions/anypress-api/issues"
   },
   "license": "GPL-3.0-or-later",
   "author": "Otaku Solutions",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hamchowderr/waas-provisioning-api.git",
+    "url": "git+https://github.com/otaku-solutions/anypress-api.git",
     "directory": "sdk/typescript"
   },
   "type": "module",

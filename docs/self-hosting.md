@@ -6,9 +6,9 @@ The platform is three repositories:
 
 | Repository | What it is | Where it runs |
 |---|---|---|
-| [waas-provisioning-api](https://github.com/hamchowderr/waas-provisioning-api) | The provisioning API (Hono + pg-boss on Postgres). Creates, changes, backs up and deletes stores. | A container, next to Postgres 18 |
-| [waas-dashboard](https://github.com/hamchowderr/waas-dashboard) | The admin dashboard (Next.js). Reads and changes everything through the API's `/admin/*`. | Vercel, or any Node host |
-| [waas-plugins](https://github.com/hamchowderr/waas-plugins) | WordPress plugins: **AnyPress Host** (turns a WordPress shop into the storefront that sells stores), **AnyPress Client** (inside every store), **AnyPress Payments** (Authorize.Net for FluentCart) | Your storefront WordPress, and each store |
+| [anypress-api](https://github.com/otaku-solutions/anypress-api) | The provisioning API (Hono + pg-boss on Postgres). Creates, changes, backs up and deletes stores. | A container, next to Postgres 18 |
+| [anypress-dashboard](https://github.com/otaku-solutions/anypress-dashboard) | The admin dashboard (Next.js). Reads and changes everything through the API's `/admin/*`. | Vercel, or any Node host |
+| [anypress-plugins](https://github.com/otaku-solutions/anypress-plugins) | WordPress plugins: **AnyPress Host** (turns a WordPress shop into the storefront that sells stores), **AnyPress Client** (inside every store), **AnyPress Payments** (Authorize.Net for FluentCart) | Your storefront WordPress, and each store |
 
 ```
  customer ──► storefront (WordPress + AnyPress Host)
@@ -29,14 +29,14 @@ The platform is three repositories:
 No servers, no DNS. The API runs with the in-memory **fake provisioner**: every store operation succeeds at once and nothing is built.
 
 ```sh
-git clone https://github.com/hamchowderr/waas-provisioning-api && cd waas-provisioning-api
+git clone https://github.com/otaku-solutions/anypress-api && cd anypress-api
 export ADMIN_TOKEN=$(openssl rand -base64 32)   # turns on the admin API for the dashboard
 docker compose up --build -d
 docker compose exec api npm run create-key -- --product-name "Local storefront"
 curl -u <key>:<secret> http://localhost:4111/v1/versions
 ```
 
-Point a local storefront at it with `scripts/test-env.sh up` in waas-plugins (WordPress at http://127.0.0.1 with AnyPress Host, AnyPress Payments, FluentCart, WooCommerce and Subscriptions for WooCommerce), and the dashboard with `WAAS_API_URL=http://localhost:4111` and the same `ADMIN_TOKEN`. For UI work alone the dashboard also runs on sample data (`WAAS_API_FIXTURES=1`).
+Point a local storefront at it with `scripts/test-env.sh up` in anypress-plugins (WordPress at http://127.0.0.1 with AnyPress Host, AnyPress Payments, FluentCart, WooCommerce and Subscriptions for WooCommerce), and the dashboard with `WAAS_API_URL=http://localhost:4111` and the same `ADMIN_TOKEN`. For UI work alone the dashboard also runs on sample data (`WAAS_API_FIXTURES=1`).
 
 The fake provisioner builds no real stores, so a test order on the storefront never reaches **Ready**: AnyPress Host waits until the store's address answers over HTTPS. Use Stage 0 to try the API, the dashboard and the storefront's settings, and Stage 1 to see a store go live.
 
@@ -112,7 +112,7 @@ For the dashboard's archive uploads (new versions and templates), the browser `P
 In the **WaaS API** project:
 
 1. Add a **PostgreSQL 16** database. Keep it private.
-2. Add an application from the waas-provisioning-api repository (or your fork), branch `main`, build pack **Dockerfile**, port `4111`, health check `GET /health`, on your API domain (e.g. `https://api.<domain>`).
+2. Add an application from the anypress-api repository (or your fork), branch `main`, build pack **Dockerfile**, port `4111`, health check `GET /health`, on your API domain (e.g. `https://api.<domain>`).
 3. Create a Coolify API token with **read, read:sensitive, write and deploy** (not root). Without `read:sensitive`, Coolify hides the store agent's output and every store create fails.
 4. Set the environment variables below and deploy. Migrations run at startup.
 
@@ -165,7 +165,7 @@ Stores are copies of a template version. Two templates ship in `templates/`, eac
 
 `publish.sh` needs `WAAS_API_URL` (your API's address) and a product key and secret (`WAAS_KEY`, `WAAS_SECRET`). You can also upload an archive from the dashboard's **Versions & templates** page. Make one version **production**: new stores use it.
 
-Prebuilt archives of `anypress-store` and `seller-storefront`, with their checksums, are on this repository's [`templates-v*` releases](https://github.com/hamchowderr/waas-provisioning-api/releases) (built by `templates/release.sh`). The [installer](../install/README.md) publishes the newest one for you.
+Prebuilt archives of `anypress-store` and `seller-storefront`, with their checksums, are on this repository's [`templates-v*` releases](https://github.com/otaku-solutions/anypress-api/releases) (built by `templates/release.sh`). The [installer](../install/README.md) publishes the newest one for you.
 
 ### 6. The storefront
 
@@ -181,14 +181,14 @@ The storefront needs a real cron: FluentCart creates stores in the background th
 
 ### 7. The dashboard
 
-Deploy waas-dashboard to Vercel, or to any host with Node 22 or newer, such as a Coolify application in the **WaaS API** project (`npm ci && npm run build && npm start`, port 3000). Sign-in runs on the API, so the API needs `AUTH_URL` (this dashboard's address) and `AUTH_SECRET` from section 4. On the dashboard set:
+Deploy anypress-dashboard to Vercel, or to any host with Node 22 or newer, such as a Coolify application in the **WaaS API** project (`npm ci && npm run build && npm start`, port 3000). Sign-in runs on the API, so the API needs `AUTH_URL` (this dashboard's address) and `AUTH_SECRET` from section 4. On the dashboard set:
 
 - `WAAS_API_URL`: the API's address.
 - `WAAS_ADMIN_TOKEN`: the API's `ADMIN_TOKEN`.
 - `ALLOWED_ADMIN_EMAILS`: your own email address (comma separated for more). These people see every storefront.
 - `AUTH_PROVIDERS` (optional): `email` by default, an emailed sign-in link. Add `github` or `google` once the API has their keys.
 
-Sign in with your email address. Add a CORS rule on the bucket allowing `PUT` from the dashboard's address for archive uploads. Details in its [README](https://github.com/hamchowderr/waas-dashboard#set-it-up).
+Sign in with your email address. Add a CORS rule on the bucket allowing `PUT` from the dashboard's address for archive uploads. Details in its [README](https://github.com/otaku-solutions/anypress-dashboard#set-it-up).
 
 ### 8. Email
 
@@ -210,7 +210,7 @@ With Domain Connect, customers whose DNS host supports it add these records (and
 
 ### Plugin updates
 
-Storefronts update AnyPress Host and AnyPress Payments from the API (`/v1/plugins/{slug}/update`), never from wordpress.org. Each release is signed with ed25519 and the plugins only install releases signed by a key built into them (`Updater::PUBLIC_KEYS` in waas-plugins). If you run your own channel, generate your own release key, put its public half in `Updater::PUBLIC_KEYS`, sign with the private half (`WAAS_RELEASE_SIGNING_KEY` in the release workflow), and set `RELEASES_S3_BUCKET` on the API. Otherwise set `WAAS_UPDATE_CHANNEL` to `off` in the storefront's `wp-config.php` and install release zips by hand. waas-plugins' `docs/releases.md` has the details.
+Storefronts update AnyPress Host and AnyPress Payments from the API (`/v1/plugins/{slug}/update`), never from wordpress.org. Each release is signed with ed25519 and the plugins only install releases signed by a key built into them (`Updater::PUBLIC_KEYS` in anypress-plugins). If you run your own channel, generate your own release key, put its public half in `Updater::PUBLIC_KEYS`, sign with the private half (`WAAS_RELEASE_SIGNING_KEY` in the release workflow), and set `RELEASES_S3_BUCKET` on the API. Otherwise set `WAAS_UPDATE_CHANNEL` to `off` in the storefront's `wp-config.php` and install release zips by hand. anypress-plugins' `docs/releases.md` has the details.
 
 ## Stage 2: more servers
 

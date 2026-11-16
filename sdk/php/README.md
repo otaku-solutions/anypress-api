@@ -1,6 +1,6 @@
 # AnyPress SDK for PHP
 
-A PHP client for the [AnyPress API](https://github.com/hamchowderr/waas-provisioning-api), the API that creates and runs WordPress stores. Use it from your own PHP code, or from a WordPress plugin, to create stores, manage their domains and backups, and check webhooks.
+A PHP client for the [AnyPress API](https://github.com/otaku-solutions/anypress-api), the API that creates and runs WordPress stores. Use it from your own PHP code, or from a WordPress plugin, to create stores, manage their domains and backups, and check webhooks.
 
 - PHP 8.1 or newer, with no other packages needed.
 - Sends requests with curl by default, or with `wp_remote_request` inside WordPress.
@@ -20,7 +20,7 @@ You need three things from whoever runs the API (or from your own server, if you
 
 - the API's address, such as `https://api.example.com`
 - an API key and its secret
-- a production version on your storefront, so new stores have something to be copied from ([how](https://github.com/hamchowderr/waas-provisioning-api/blob/main/README.md#quick-start))
+- a production version on your storefront, so new stores have something to be copied from ([how](https://github.com/otaku-solutions/anypress-api/blob/main/README.md#quick-start))
 
 Save this as `quickstart.php` next to your `vendor/` folder:
 
@@ -68,7 +68,7 @@ Running it again is safe: a second create with the same `externalId` answers wit
 - The **API key** (a UUID, also called the key id) and its **secret** are the Basic auth username and password.
 - Every change runs in the background. A store's `statusCode` is `0` Pending, `1` Done, `2` Failed or `3` Removing (the `StatusCode` constants).
 
-The full list is in the [main README](https://github.com/hamchowderr/waas-provisioning-api/blob/main/README.md#words-used-in-these-docs).
+The full list is in the [main README](https://github.com/otaku-solutions/anypress-api/blob/main/README.md#words-used-in-these-docs).
 
 ## Reference
 
@@ -115,7 +115,7 @@ Writes return as soon as the work is queued; call `waitForTenant` or use webhook
 | | `removeDomain(array $ref, string $domainName)` | Removes a domain |
 | | `setMainDomain(array $ref, string $domainName)` | Makes a domain the store's main address |
 | | `checkDomainAvailability(string $domain)` | Whether a domain is free to use |
-| | `domainConnect(array $ref, string $domainName, string $service)` | A one-click link that adds the store's DNS records (`$service` is `'website'` or `'email'`), when the DNS host supports [Domain Connect](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/domain-connect.md) |
+| | `domainConnect(array $ref, string $domainName, string $service)` | A one-click link that adds the store's DNS records (`$service` is `'website'` or `'email'`), when the DNS host supports [Domain Connect](https://github.com/otaku-solutions/anypress-api/blob/main/docs/domain-connect.md) |
 | Sending domain | `getMailDomain(array $ref)`, `setMailDomain(array $ref, string $domainName)`, `removeMailDomain(array $ref)` | The store's own sending domain for email, with the DNS records to add. `getMailDomain` returns `null` when the store sends from the platform's address |
 | Versions | `listVersions(array $query = [])`, `createVersion(array $params)`, `deleteVersion(string $versionId)`, `setProductionVersion(string $versionId)` | Versions of your storefront. New stores use the production version unless they name another |
 | Snapshots | `listSnapshots(array $query = [])`, `downloadSnapshot(string $snapshotId)` | Snapshots, and one snapshot's zip as a string of bytes |
@@ -148,7 +148,7 @@ $endpoint = $waas->createWebhook([
 $secret = $endpoint['secret']; // shown only this once
 ```
 
-Then check each request with `Webhook::verify`, passing the secret, the headers and the raw body exactly as received. [docs/webhooks.md](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/webhooks.md) lists the events.
+Then check each request with `Webhook::verify`, passing the secret, the headers and the raw body exactly as received. [docs/webhooks.md](https://github.com/otaku-solutions/anypress-api/blob/main/docs/webhooks.md) lists the events.
 
 ```php
 use Waas\Provisioning\Webhook;
@@ -169,7 +169,7 @@ Header names can be in any case. Requests older than 5 minutes are rejected; the
 
 ## Developing this package
 
-This package lives in `sdk/php` of the [waas-provisioning-api](https://github.com/hamchowderr/waas-provisioning-api) repository; send issues and pull requests there. `test/sdk-php.test.ts` starts the API and runs `tests/live.php` against it, so the API's test suite fails when the client and the API disagree. Changes: [CHANGELOG.md](CHANGELOG.md).
+This package lives in `sdk/php` of the [anypress-api](https://github.com/otaku-solutions/anypress-api) repository; send issues and pull requests there. `test/sdk-php.test.ts` starts the API and runs `tests/live.php` against it, so the API's test suite fails when the client and the API disagree. Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

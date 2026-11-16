@@ -3,7 +3,7 @@
   "pins": [
     {
       "name": "AnyPress Client (store template)",
-      "source": "github-tag:hamchowderr/waas-plugins",
+      "source": "github-tag:otaku-solutions/anypress-plugins",
       "tagPrefix": "anypress-client-v",
       "places": [
         {
@@ -14,7 +14,7 @@
     },
     {
       "name": "AnyPress theme",
-      "source": "github:hamchowderr/anypress-theme",
+      "source": "github:otaku-solutions/anypress-theme",
       "asset": "anypress.zip",
       "places": [
         {
@@ -28,7 +28,7 @@
     },
     {
       "name": "AnyPress Blocks",
-      "source": "github:hamchowderr/anypress-blocks",
+      "source": "github:otaku-solutions/anypress-blocks",
       "asset": "anypress-blocks.zip",
       "places": [
         {

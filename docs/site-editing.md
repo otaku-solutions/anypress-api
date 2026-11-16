@@ -9,7 +9,7 @@ An AI agent connected to the API's MCP server (`/mcp`, or `/mcp/site` for a webs
 3. The API checks the caller owns the store and that it is Done and not suspended, signs the request with the store's **site key** and sends it to `https://<main domain>/wp-json/anypress-client/v1/site/pages/12/sections`.
 4. AnyPress Client checks the signature and makes the change as the store's first administrator. Its answer comes back as `{ status, body }`.
 
-The routes AnyPress Client answers, the signature format and its safety rules are in waas-plugins' [docs/site-editing-api.md](https://github.com/hamchowderr/waas-plugins/blob/main/docs/site-editing-api.md).
+The routes AnyPress Client answers, the signature format and its safety rules are in anypress-plugins' [docs/site-editing-api.md](https://github.com/otaku-solutions/anypress-plugins/blob/main/docs/site-editing-api.md).
 
 ## Site keys
 

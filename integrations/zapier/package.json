@@ -6,7 +6,7 @@
   "homepage": "https://anypress.io/automate",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hamchowderr/waas-provisioning-api.git",
+    "url": "git+https://github.com/otaku-solutions/anypress-api.git",
     "directory": "integrations/zapier"
   },
   "main": "index.js",

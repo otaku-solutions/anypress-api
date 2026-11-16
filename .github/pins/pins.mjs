@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const OWN = /^github:hamchowderr\//;
+const OWN = /^github:otaku-solutions\//;
 const mode = process.argv[2];
 if (mode !== 'check' && mode !== 'update') {
   console.error('usage: pins.mjs check|update [repository root]');

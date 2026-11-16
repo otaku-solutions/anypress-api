@@ -1,6 +1,6 @@
 # waas-provisioning-sdk
 
-A typed TypeScript client for the [AnyPress API](https://github.com/hamchowderr/waas-provisioning-api), the API that creates and runs WordPress stores. Use it from your own server code to create stores, manage their domains and backups, and receive webhooks.
+A typed TypeScript client for the [AnyPress API](https://github.com/otaku-solutions/anypress-api), the API that creates and runs WordPress stores. Use it from your own server code to create stores, manage their domains and backups, and receive webhooks.
 
 - Works anywhere with `fetch` and Web Crypto: Node 20+, Deno, Bun and edge runtimes.
 - No runtime dependencies. ES module only.
@@ -20,7 +20,7 @@ You need three things from whoever runs the API (or from your own server, if you
 
 - the API's address, such as `https://api.example.com`
 - an API key and its secret
-- a production version on your storefront, so new stores have something to be copied from ([how](https://github.com/hamchowderr/waas-provisioning-api/blob/main/README.md#quick-start))
+- a production version on your storefront, so new stores have something to be copied from ([how](https://github.com/otaku-solutions/anypress-api/blob/main/README.md#quick-start))
 
 Save this as `quickstart.mjs`:
 
@@ -67,7 +67,7 @@ Running it again is safe: a second create with the same `externalId` answers wit
 - The **API key** (a UUID, also called the key id) and its **secret** are the Basic auth username and password.
 - Every change runs in the background. A store's `statusCode` is `0` Pending, `1` Done, `2` Failed or `3` Removing (the `StatusCode` constant).
 
-The full list is in the [main README](https://github.com/hamchowderr/waas-provisioning-api/blob/main/README.md#words-used-in-these-docs).
+The full list is in the [main README](https://github.com/otaku-solutions/anypress-api/blob/main/README.md#words-used-in-these-docs).
 
 ## Reference
 
@@ -116,7 +116,7 @@ Each method returns the API's JSON answer, typed. Writes return as soon as the w
 | `webhooks` | `list()`, `create(params)`, `get(id)`, `update(id, params)`, `delete(id)` | Your webhook endpoints. `create` answers with the `secret`, shown only once |
 | | `rotateSecret(id)`, `test(id)` | A new secret (the old one stops at once); send a `webhook.test` event |
 | | `deliveries(id, query)`, `retryDelivery(deliveryId)` | Deliveries to an endpoint; send one again |
-| client | `domainConnect(ref, domainName, 'website' \| 'email')` | A one-click link that adds the store's DNS records at the domain's DNS host, when the host supports [Domain Connect](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/domain-connect.md) |
+| client | `domainConnect(ref, domainName, 'website' \| 'email')` | A one-click link that adds the store's DNS records at the domain's DNS host, when the host supports [Domain Connect](https://github.com/otaku-solutions/anypress-api/blob/main/docs/domain-connect.md) |
 | | `waitForTenant(ref, { intervalMs, timeoutMs, signal })` | Polls until the store is Done (returns it) or Failed (throws `TenantFailedError`). Defaults: every 5 seconds, for up to 15 minutes |
 
 The full list of fields for each call is in the API reference your server publishes at `/docs` (and as OpenAPI at `/openapi.json`).
@@ -133,7 +133,7 @@ The full list of fields for each call is in the API reference your server publis
 
 ### Webhooks
 
-Register an endpoint once and keep its secret. Then check each request with `verifyWebhook`, passing the raw body exactly as received. [docs/webhooks.md](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/webhooks.md) lists the events.
+Register an endpoint once and keep its secret. Then check each request with `verifyWebhook`, passing the raw body exactly as received. [docs/webhooks.md](https://github.com/otaku-solutions/anypress-api/blob/main/docs/webhooks.md) lists the events.
 
 ```ts
 import { verifyWebhook, WebhookVerificationError } from 'waas-provisioning-sdk';
@@ -167,7 +167,7 @@ From the repository root:
 - `npm run sdk:check` fails when the generated types are out of date. CI runs it.
 - `test/sdk.test.ts` runs the client against the API itself.
 
-`npm run build` in this folder builds `dist/`. Releases: [docs/publishing.md](https://github.com/hamchowderr/waas-provisioning-api/blob/main/docs/publishing.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+`npm run build` in this folder builds `dist/`. Releases: [docs/publishing.md](https://github.com/otaku-solutions/anypress-api/blob/main/docs/publishing.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

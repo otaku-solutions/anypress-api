@@ -35,6 +35,15 @@ FluentCart Customer Rights 0.1.3 (`fluent-cart-customer-rights`, FluentCart's fr
 cancel: a cancellation form on the "Withdraw from contract" page FluentCart makes with its other pages, and each request
 kept on its order) is kept in [`plugins/`](plugins/) the same way and is on wherever FluentCart is.
 
+FluentEvent 1.0.1 (`fluent-event`, WPManageNinja's free events plugin: online and in-person events in calendars, RSVPs or
+sign-ups, a page for each event at `/event/<slug>/`, confirmation and reminder emails, and an Events tab in the community
+and each space) is kept in [`plugins/`](plugins/) the same way, from
+`https://fluentapi.wpmanageninja.com/addons/download/fluent-event/latest.zip`. It is on for the `community` and
+`everything` site types; `presets.php` turns on FluentCommunity's FluentEvent feature, and on the store's first page
+load `mu-plugins/anypress-store.php` turns on the Events link in the community's sidebar (FluentEvent adds it switched
+off). Each space's own Events tab stays off until the space's admin turns it on. Once installed, FluentEvent updates
+itself from WPManageNinja.
+
 The FluentCart Migrator add-on 1.1.0-beta (`fluent-cart-migrator`, FluentCart's own importer for WooCommerce shops) is kept
 in [`plugins/`](plugins/) the same way and installed switched off, so it doesn't load on every page. AnyPress Client's shop
 switch (`wp anypress shop switch`) turns it on when it runs.
@@ -180,7 +189,7 @@ owner sees it in WordPress on Dashboard > Your plan, and the AnyPress dashboard 
 | `website` | Website | FluentAuth, FluentSMTP, FluentCRM, Fluent Forms, FluentPlayer, FluentSnippets, Rank Math, AutomatorWP, WP Fusion Lite, FluentToolkit |
 | `bookings` | Bookings | Website's, plus FluentBooking, FluentCart (to take payment for bookings, with no Shop or Cart page) with Customer Rights, and Fluent Support |
 | `online-store` | Online store | Website's, plus FluentCart with Customer Rights, Fluent Support and FluentAffiliate |
-| `community` | Community & courses | Website's, plus FluentCommunity and FluentCart with Customer Rights (to sell memberships and courses) |
+| `community` | Community & courses | Website's, plus FluentCommunity, FluentEvent (events and RSVPs) and FluentCart with Customer Rights (to sell memberships and courses) |
 | `everything` | Everything | all of them |
 | `highlevel` | HighLevel site, for a HighLevel agency's sites | FluentAuth (login protection), FluentPlayer (video), FluentSnippets (code snippets and shortcodes), Rank Math, AutomatorWP, WP Fusion Lite, LeadConnector, FluentHub (FluentToolkit). HighLevel is the CRM, forms, calendars, payments and email, so no Fluent business plugin. Owners may add plugins of their own (`ownPlugins`) |
 | `store` | Everything, for stores bought before site types | all of them |

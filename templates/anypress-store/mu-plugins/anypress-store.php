@@ -221,6 +221,7 @@ add_action('init', function () {
         'wp-fusion-lite' => 'wp-fusion-lite/wp-fusion-lite.php',
         'rank-math' => 'seo-by-rank-math/rank-math.php',
         'fluent-toolkit' => 'fluent-toolkit/fluent-toolkit.php',
+        'fluent-event' => 'fluent-event/fluent-event.php',
     ];
     $applied = get_option('anypress_owner_applied');
     if (is_string($applied)) {
@@ -370,6 +371,47 @@ add_action('init', function () {
             $titles['website_name'] = $name;
             update_option('rank-math-options-titles', $titles);
         },
+        // FluentEvent: the community's sidebar gets its Events link (FluentEvent adds it switched off). Saved through
+        // FluentCommunity's Menu Settings route as the site's admin, as that screen does; presets.php turned the
+        // FluentEvent feature on. Each space's own Events tab stays the space admin's choice.
+        'fluent-event' => function () {
+            if (!class_exists(\FluentCommunity\Modules\Integrations\Integrations::class) || !\FluentCommunity\Modules\Integrations\Integrations::isFluentEventEnabled()) {
+                return;
+            }
+            $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
+            $before = get_current_user_id();
+            wp_set_current_user((int) ($admins[0] ?? 0));
+            try {
+                $read = rest_do_request(new \WP_REST_Request('GET', '/fluent-community/v2/settings/menu-settings'));
+                $menu = $read->get_data();
+                $groups = !$read->is_error() && is_array($menu['menuSettings'] ?? null) ? $menu['menuSettings'] : [];
+                $found = false;
+                foreach ($groups['mainMenuItems'] ?? [] as $key => $item) {
+                    if (($item['slug'] ?? '') === 'fluent_events') {
+                        $groups['mainMenuItems'][$key]['enabled'] = 'yes';
+                        $found = true;
+                    }
+                }
+                $saved = false;
+                if ($found) {
+                    $save = new \WP_REST_Request('POST', '/fluent-community/v2/settings/menu-settings');
+                    $save->set_header('content-type', 'application/json');
+                    $save->set_body((string) wp_json_encode(['menuSettings' => $groups]));
+                    $saved = !rest_do_request($save)->is_error();
+                }
+            } finally {
+                wp_set_current_user($before);
+            }
+            // Not saved: tried again on the next two page loads, then left to the owner (FluentCommunity > Menu Settings).
+            if (!$saved) {
+                $tries = (int) get_option('anypress_fluent_event_menu_tries', 0) + 1;
+                update_option('anypress_fluent_event_menu_tries', $tries, false);
+                if ($tries < 3) {
+                    return false;
+                }
+            }
+            delete_option('anypress_fluent_event_menu_tries');
+        },
         // FluentHub: every Fluent plugin opens in its one workspace, with one menu and no separate app headers.
         'fluent-toolkit' => function () {
             $settings = get_option('_fluent_kit_settings', []);
@@ -379,7 +421,10 @@ add_action('init', function () {
     ];
     foreach ($due as $plugin) {
         try {
-            $steps[$plugin]();
+            // A step that answers false didn't finish and runs again on a later page load.
+            if ($steps[$plugin]() === false) {
+                continue;
+            }
         } catch (\Throwable $e) {
             error_log("AnyPress store: owner details for $plugin: " . $e->getMessage()); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- one plugin's setup failing must not stop the rest; the store's log is where it is looked into.
         }

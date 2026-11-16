@@ -211,6 +211,25 @@ return static function (string $type): array {
                 [6, 23, 'Is it awkward to message friends about the shop?', 'A little, the first time. Keep it short, and ask who they know rather than whether they will buy.'],
             ],
         ],
+        // FluentEvent. In the community: [space index, title, days ahead (negative: past), hour UTC, hours long, caption,
+        // about (markdown), members going (indexes)]; online, RSVP, on each space's Events tab. On the public site: a
+        // calendar of free classes and meetups anyone can sign up for: [title, days ahead, hour UTC, hours long, about,
+        // in person [venue, address, time zone] or null for online, readers signed up].
+        'events' => [
+            'community' => [
+                [3, 'Live Q&A: raising your prices', -26, 23, 1, 'Notes from this one are in the Members only space.', "Bring your price list and your questions. Felix and Hazel answer live, and we work through two members' numbers together.", [1, 2, 3, 4, 6, 9, 11, 12, 14, 18, 20, 23]],
+                [2, 'Show and tell: holiday collections', -12, 18, 1, 'Thanks to everyone who showed their work!', "Five minutes each: show what you are making for the holidays and get friendly feedback on photos, prices and names.", [2, 5, 7, 9, 10, 13, 16]],
+                [0, 'New member welcome call', 2, 17, 1, 'Joined this month? Come and say hello.', "A relaxed half hour with Hazel: how the spaces work, where to start the course, and a chance to meet other new members.", [7, 12, 18, 19, 20, 21, 22]],
+                [2, 'Portfolio review night', 5, 23, 2, 'Sign up and bring three photos of your work.', "Felix reviews product photos live. Bring three photos you would like feedback on; we will get through as many as we can.", [1, 3, 5, 8, 9, 11, 13, 15, 17]],
+                [3, 'Live Q&A: planning next year', 9, 23, 1, 'This month is all about planning. Questions welcome in advance.', "One goal, three projects and the numbers you will check every month. Bring last year's sales if you have them.", [1, 2, 4, 6, 10, 11, 12, 14, 16, 19, 23]],
+                [1, 'Coworking hour: make something', 16, 15, 1, 'Cameras on, mics off, and an hour of making.', "Pick one thing to finish, tell the group at the start, and show it at the end. That's it.", [2, 4, 5, 10, 17]],
+            ],
+            'public' => [
+                ['Free class: pricing handmade work', -40, 18, 1, "A free one-hour class on the pricing formula our members use: materials, time, costs and a margin. With a worksheet to keep.", null, range(0, 15)],
+                ['Free class: product photos on a phone', 11, 18, 1, "Window light, a white card and a steady hand. Felix shows you how to take shop photos that look like one brand, with only a phone.", null, range(16, 29)],
+                ['Makers meetup and market', 18, 17, 3, "Meet members in person, see their work and bring your own to sell. Free entry; tables for members are free too.", ['The Mill Hall', "412 Mill Street\nPortland, OR 97214", 'America/Los_Angeles'], range(30, 41)],
+            ],
+        ],
     ] : [];
 
     return $sample;

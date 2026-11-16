@@ -55,7 +55,7 @@ export function demoZip(file: string, download: typeof fetch = fetch): Promise<B
   const match = DEMO_ZIP.exec(file);
   if (!match) return Promise.resolve(null);
   const [, repo, tag] = match as unknown as [string, keyof typeof DEMO_ZIP_ASSET, string];
-  return cachedZip(file, () => Promise.resolve(`https://github.com/hamchowderr/anypress-${repo}/releases/download/${tag}/${DEMO_ZIP_ASSET[repo]}`), download);
+  return cachedZip(file, () => Promise.resolve(`https://github.com/otaku-solutions/anypress-${repo}/releases/download/${tag}/${DEMO_ZIP_ASSET[repo]}`), download);
 }
 
 /**
@@ -98,7 +98,7 @@ const LATEST_TTL = 5 * 60_000;
 const latestTags = new Map<string, { tag: string; at: number }>();
 type LatestRelease = (repo: string) => Promise<string>;
 const githubLatest: LatestRelease = async (repo) => {
-  const { data } = await new Octokit({ userAgent: 'anypress-api' }).rest.repos.getLatestRelease({ owner: 'hamchowderr', repo });
+  const { data } = await new Octokit({ userAgent: 'anypress-api' }).rest.repos.getLatestRelease({ owner: 'otaku-solutions', repo });
   return data.tag_name;
 };
 

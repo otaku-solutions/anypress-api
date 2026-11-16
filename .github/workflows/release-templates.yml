@@ -74,7 +74,7 @@ jobs:
           path: api
       - uses: actions/checkout@v7
         with:
-          repository: hamchowderr/waas-plugins
+          repository: otaku-solutions/anypress-plugins
           ref: ${{ needs.prepare.outputs.plugins_ref }}
           path: plugins
       - uses: shivammathur/setup-php@v2
@@ -117,7 +117,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with:
-          repository: hamchowderr/waas-plugins
+          repository: otaku-solutions/anypress-plugins
           ref: ${{ needs.prepare.outputs.plugins_ref }}
           path: waas-plugins
           fetch-depth: 0

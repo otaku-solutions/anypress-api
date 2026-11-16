@@ -30,7 +30,7 @@ function github(releases: { tag: string; files: Record<string, Buffer | string>;
       },
     },
   };
-  return { octokit: octokit as unknown as ReleaseSource['octokit'], owner: 'hamchowderr', repo: 'waas-provisioning-api' };
+  return { octokit: octokit as unknown as ReleaseSource['octokit'], owner: 'otaku-solutions', repo: 'anypress-api' };
 }
 
 let t: TestContext;

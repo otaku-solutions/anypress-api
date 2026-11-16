@@ -94,7 +94,7 @@ Claude Code, from a checkout of this repository (after `npm ci`):
 claude mcp add waas \
   --env WAAS_API_URL=https://api.example.com \
   --env WAAS_API_KEY=... --env WAAS_API_SECRET=... \
-  -- npm --prefix /path/to/waas-provisioning-api run -s mcp
+  -- npm --prefix /path/to/anypress-api run -s mcp
 ```
 
 Claude Desktop, in `claude_desktop_config.json`:
@@ -104,7 +104,7 @@ Claude Desktop, in `claude_desktop_config.json`:
   "mcpServers": {
     "waas": {
       "command": "npm",
-      "args": ["--prefix", "/path/to/waas-provisioning-api", "run", "-s", "mcp"],
+      "args": ["--prefix", "/path/to/anypress-api", "run", "-s", "mcp"],
       "env": {
         "WAAS_API_URL": "https://api.example.com",
         "WAAS_API_KEY": "...",

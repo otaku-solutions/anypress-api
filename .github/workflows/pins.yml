@@ -50,7 +50,7 @@ jobs:
           node-version: 22
       - name: Move the pins
         id: update
-        uses: hamchowderr/waas-provisioning-api/.github/pins@main
+        uses: otaku-solutions/anypress-api/.github/pins@main
         with:
           mode: update
       - name: Open the pull request, run CI on it and merge it

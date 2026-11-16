@@ -6,9 +6,9 @@ It is written for businesses that sell websites to their own customers (sellers 
 
 | Repository | What it is |
 |---|---|
-| **waas-provisioning-api** (this one) | The API, plus SDKs for TypeScript and PHP |
-| [waas-plugins](https://github.com/hamchowderr/waas-plugins) | WordPress plugins for the storefront (AnyPress Host) and for every store (AnyPress Client) |
-| [waas-dashboard](https://github.com/hamchowderr/waas-dashboard) | The dashboard for everything the API runs |
+| **anypress-api** (this one) | The API, plus SDKs for TypeScript and PHP |
+| [anypress-plugins](https://github.com/otaku-solutions/anypress-plugins) | WordPress plugins for the storefront (AnyPress Host) and for every store (AnyPress Client) |
+| [anypress-dashboard](https://github.com/otaku-solutions/anypress-dashboard) | The dashboard for everything the API runs |
 
 ## Contents
 
@@ -42,7 +42,7 @@ It is written for businesses that sell websites to their own customers (sellers 
 This runs the API on your computer with Docker. It uses the **fake provisioner**, which builds nothing and answers every change with Done at once, so you can try the API without servers.
 
 ```sh
-git clone https://github.com/hamchowderr/waas-provisioning-api && cd waas-provisioning-api
+git clone https://github.com/otaku-solutions/anypress-api && cd anypress-api
 docker compose up --build -d
 docker compose exec api npm run create-key -- --product-name "Example storefront"
 ```
@@ -129,7 +129,7 @@ it on the server, or from your computer with a Hostinger, Hetzner or DigitalOcea
 too. The dashboard can go to your own Vercel account instead. Also on [anypress.io/self-host](https://anypress.io/self-host).
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/install/anypress-install.sh
+curl -fsSLO https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/install/anypress-install.sh
 bash anypress-install.sh hetzner     # or hostinger, digitalocean; or `sudo bash anypress-install.sh` on the server
 ```
 
@@ -187,7 +187,7 @@ The first key comes from `npm run create-key` or from the dashboard. After that,
 
 ## Admin API
 
-`/admin/*` serves the [dashboard](https://github.com/hamchowderr/waas-dashboard) and is described in [`openapi/admin/admin-api.yaml`](openapi/admin/admin-api.yaml). It sees every product and signs in with `Authorization: Bearer <ADMIN_TOKEN>`. Product keys, a missing header and a wrong token all get 403, and so does every request when `ADMIN_TOKEN` is not set. The token is compared in constant time and never logged.
+`/admin/*` serves the [dashboard](https://github.com/otaku-solutions/anypress-dashboard) and is described in [`openapi/admin/admin-api.yaml`](openapi/admin/admin-api.yaml). It sees every product and signs in with `Authorization: Bearer <ADMIN_TOKEN>`. Product keys, a missing header and a wrong token all get 403, and so does every request when `ADMIN_TOKEN` is not set. The token is compared in constant time and never logged.
 
 | Endpoint | What it returns or does |
 |---|---|
@@ -224,11 +224,11 @@ A job that fails its last retry is recorded in `job_failures` (type, store or ve
 
 ## Plugin updates
 
-The WordPress plugins in [waas-plugins](https://github.com/hamchowderr/waas-plugins) get their updates from this API, never from GitHub or wordpress.org. [`openapi/plugin-updates.yaml`](openapi/plugin-updates.yaml) describes it.
+The WordPress plugins in [anypress-plugins](https://github.com/otaku-solutions/anypress-plugins) get their updates from this API, never from GitHub or wordpress.org. [`openapi/plugin-updates.yaml`](openapi/plugin-updates.yaml) describes it.
 
 - `GET /v1/plugins/{slug}/update?version=&channel=stable|beta&site=&wp=&php=` signs in with the storefront's own API key, like any `/v1` call. `slug` is one of `anypress-host`, `anypress-client` or `anypress-payments` (the plugins' folder names). It answers the release the channel points at, or the product's pinned release, with `sha256`, the ed25519 `signature`, and a `package` URL that works for 10 minutes. It answers 404 when nothing is released on the channel, and 503 when updates aren't set up or the bucket can't be read.
 - Every check records the slug, site, version, channel, WordPress version and PHP version in `plugin_installs` (also on 404 and 503).
-- The API only reads the releases bucket and never signs. The waas-plugins release workflow uploads `releases/<slug>/<version>/<slug>.zip`, its `manifest.json`, and `releases/<slug>/channels/<channel>.json` (a copy of the manifest the channel points at). The plugin checks the sha256 and the signature of `waas-release-v1\n<slug>\n<version>\n<sha256>` against public keys built into it, so a wrong manifest here can't make a site install something the key didn't sign. If you run your own API, the plugins need your own release key: see [Plugin updates](docs/self-hosting.md#plugin-updates) in the self-hosting guide.
+- The API only reads the releases bucket and never signs. The anypress-plugins release workflow uploads `releases/<slug>/<version>/<slug>.zip`, its `manifest.json`, and `releases/<slug>/channels/<channel>.json` (a copy of the manifest the channel points at). The plugin checks the sha256 and the signature of `waas-release-v1\n<slug>\n<version>\n<sha256>` against public keys built into it, so a wrong manifest here can't make a site install something the key didn't sign. If you run your own API, the plugins need your own release key: see [Plugin updates](docs/self-hosting.md#plugin-updates) in the self-hosting guide.
 - Stores don't update themselves. AnyPress Client comes with the version, and a store moves to a newer version through `POST /v1/tenants/version`.
 - Ready-made storefronts get each stable AnyPress Host release pushed by the API within 15 minutes, with no update check or WP-Cron involved: see [AnyPress Host updates on storefronts](docs/host-updates.md).
 

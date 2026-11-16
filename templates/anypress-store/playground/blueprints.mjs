@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = resolve(HERE, '..');
 /** The template's own files, from this repository's main branch (raw.githubusercontent.com lets any site read them). */
-const RAW = 'https://raw.githubusercontent.com/hamchowderr/waas-provisioning-api/main/templates/anypress-store';
+const RAW = 'https://raw.githubusercontent.com/otaku-solutions/anypress-api/main/templates/anypress-store';
 /**
  * Release zips through the AnyPress API: GitHub's release downloads don't let a page read them, so Playground in a
  * browser can't, and AnyPress Client's releases are not GitHub downloads at all (it gets its latest stable release).
@@ -111,7 +111,7 @@ export function blueprint(type) {
     $schema: 'https://playground.wordpress.net/blueprint-schema.json',
     meta: {
       title: `AnyPress: ${roles[type].title}`,
-      author: 'hamchowderr',
+      author: 'otaku-solutions',
       description: `A new AnyPress ${roles[type].title.toLowerCase()} site, as a store of this type starts: the AnyPress theme, its plugins and settings. Runs in your browser; nothing is saved.`,
       categories: ['AnyPress'],
     },

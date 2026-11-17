@@ -210,7 +210,11 @@ add_action('init', function () {
     $settings = is_array($settings) ? $settings : [];
     $settings['disable_ai_assistant'] = 'on';
     update_option('automatorwp_settings', $settings);
-    update_option('anypress_store_automatorwp_ai_off', 1, true);
+    // Mark it done only once the setting is really saved, so a failed write is tried again on the next request.
+    $saved = get_option('automatorwp_settings');
+    if (is_array($saved) && ($saved['disable_ai_assistant'] ?? '') === 'on') {
+        update_option('anypress_store_automatorwp_ai_off', 1, true);
+    }
 });
 
 /*

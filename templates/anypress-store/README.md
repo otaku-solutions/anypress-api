@@ -61,7 +61,7 @@ chat widget and calendars on the site. It is installed **off** (`OFF_PLUGINS` in
 
 And WordPress's [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) 0.7.1 (`mcp-adapter`), installed off and turned on by
 AnyPress Client on every site type (it is always on, with no switch). AI apps that speak MCP can work on the site's
-pages and design at `/wp-json/mcp/anypress`, signed in as a WordPress user with an application password; Dashboard →
+pages and design, and set up AutomatorWP automations through AutomatorWP's own abilities, at `/wp-json/mcp/anypress`, signed in as a WordPress user with an application password; Dashboard →
 Your plan → AI apps (MCP) shows the address. It is pinned in [`build.sh`](build.sh) (`OFF_PLUGINS`) and isn't in
 `roles.json`. FluentHub carries its own copy of the MCP Adapter; `mu-plugins/anypress-store.php` keeps that copy off
 (`FLUENT_TOOLKIT_DISABLE_BUNDLED_MCP_ADAPTER`), so the standalone plugin is the only one and a new store doesn't load both.
@@ -120,7 +120,7 @@ until launch, and a `waas-admin` user with a random password nobody keeps.
 - Fluent Forms: honeypot and token spam checks; the contact form emails the site's admin address; the
   subscription form adds people to Newsletter after they confirm (double opt-in).
 - FluentAffiliate: FluentCart integration on, so store orders count as referrals.
-- Fluent Support: FluentBooking links in tickets. AutomatorWP: logs cleared after 30 days, no Pro suggestions.
+- Fluent Support: FluentBooking links in tickets. AutomatorWP: logs cleared after 30 days, no Pro suggestions, its AI Assistant chat switched off once per store (stores have no AI provider; owners can switch it back on in its settings).
 - Theme: the Main menu above.
 - Starter pages (`mu-plugins/anypress-patterns.php`); the build checks they register.
 - FluentAuth: first-run wizard done with its defaults (5 failed logins locks an address for 30 minutes, monthly

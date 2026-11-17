@@ -198,6 +198,21 @@ add_action('init', function () {
     update_option('anypress_store_home', $home, true);
 }, 9999);
 
+// Once per store: switch off AutomatorWP's AI Assistant chat, with AutomatorWP's own "Disable AI Assistant" setting.
+// It answers through WordPress's AI connectors, and stores have no AI provider set up, so the chat could only fail.
+// The setting hides the chat alone: AutomatorWP's abilities stay, and AI apps use them through the site's MCP server.
+// Owners can switch the chat back on in AutomatorWP > Settings > General once they add an AI provider.
+add_action('init', function () {
+    if (get_option('anypress_store_automatorwp_ai_off') || !defined('AUTOMATORWP_VER')) {
+        return;
+    }
+    $settings = get_option('automatorwp_settings');
+    $settings = is_array($settings) ? $settings : [];
+    $settings['disable_ai_assistant'] = 'on';
+    update_option('automatorwp_settings', $settings);
+    update_option('anypress_store_automatorwp_ai_off', 1, true);
+});
+
 /*
  * The owner's details. The platform sets the site title and admin email from the purchase when it creates the
  * store, and `anypress_store_owner` (JSON: name, country). The plugins keep their own copies of a business name and

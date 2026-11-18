@@ -10,7 +10,7 @@ import { badRequest } from './errors.ts';
  */
 
 /** The notices worth interrupting someone for. The rest stay in the bell. */
-const PUSH_TYPES = new Set(['tenant.ready', 'tenant.failed', 'tenant.backup_failed', 'version.failed', 'application.received', 'restore_test.failed']);
+const PUSH_TYPES = new Set(['tenant.ready', 'tenant.failed', 'version.failed', 'application.received', 'restore_test.failed']);
 
 export interface PushConfig {
   publicKey: string;

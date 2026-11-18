@@ -10,13 +10,14 @@ don't have to watch the Jobs page.
 | `tenant.ready` | "Acme is ready" |
 | `tenant.live` | "Acme is live" |
 | `tenant.failed` | "A job on Acme failed" |
-| `tenant.backup_failed` | "A backup of Acme failed" |
 | `tenant.restored`, `tenant.rolled_back` | The store was restored or rolled back |
 | `tenant.suspended`, `tenant.resumed`, `tenant.deleted` | The store went offline, came back, or was deleted |
 | `version.ready`, `version.failed` | A template version finished building, or failed |
 
 Smaller changes (settings updates, domain changes, moves to a new version during a rollout) don't
-make one; they still go out as [webhooks](webhooks.md). The platform admin also sees new seller
+make one; they still go out as [webhooks](webhooks.md). Neither does a failed backup: backups run by
+themselves every night and are kept in storage, so there's nothing to do about one; the platform team
+is alerted and retries it. The platform admin also sees new seller
 applications and failed nightly restore tests.
 
 Everyone on a storefront's team sees that storefront's notifications. Each person has their own

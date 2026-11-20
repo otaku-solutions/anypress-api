@@ -134,7 +134,7 @@ const WRONG_CONTAINER_ATTEMPTS = 4;
 class WrongContainerError extends Error {}
 /**
  * WP-CLI for the cron task. The CLI image's PHP allows 128 MB, and a store with every template plugin needs about
- * that just to load them in WP-CLI (no opcache), so cron died there. 192 MB fits the agent's 256 MB. No --path: the
+ * that just to load them in WP-CLI (no opcache), so cron died there. 192 MB fits the agent's 384 MB. No --path: the
  * agent's working directory is /var/www/html, and the command has to fit Coolify's 255 characters.
  */
 const WP = 'php -d memory_limit=192M /usr/local/bin/wp';
@@ -238,8 +238,10 @@ function wantsCache(phpConstants: Record<string, { value: string }> | null | und
  * 24: storage 10 / 20 / 30 GB by size (plans.ts), and storage packs: the plan mu-plugin adds the packs' storage
  *    (the agent's storage-packs operation) to the plan's.
  * 25: Nginx hides readme.html, license.txt and wp-config-sample.php, which name WordPress's version.
+ * 26: the agent container gets an init process (no more zombie processes), 384 MB, and one WordPress at a time:
+ *    cron commands and agent operations share WP_LOCK.
  */
-export const STORE_SETUP = 25;
+export const STORE_SETUP = 26;
 
 const storeName = (storeId: string) => `store-${storeId}`;
 const versionName = (versionId: string) => `version-${versionId}`;

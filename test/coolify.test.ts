@@ -2,7 +2,7 @@ import { gunzipSync } from 'node:zlib';
 import { parse, stringify } from 'yaml';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
-import { AGENT_COMMAND, AGENT_GZ, AGENT_SCRIPT, CRON_LIMIT, ENV_VALUE_LIMIT, NGINX_IMAGE, renderCompose } from '../src/provisioner/coolify/compose.ts';
+import { AGENT_COMMAND, AGENT_GZ, AGENT_SCRIPT, CRON_LIMIT, ENV_VALUE_LIMIT, NGINX_IMAGE, renderCompose, WP_LOCK } from '../src/provisioner/coolify/compose.ts';
 import { CRON_TASK, CoolifyProvisioner, formatMeta, moveReport, parseMeta, STORE_SETUP } from '../src/provisioner/coolify/provisioner.ts';
 import { S3 } from '../src/provisioner/s3.ts';
 
@@ -337,7 +337,9 @@ describe('CoolifyProvisioner', () => {
     );
     expect(compose.services.wordpress.labels).toContain(`traefik.http.routers.store-${STORE_ID}-assistant.service=website-assistant-panel@docker`);
     // The agent loads WordPress with every plugin for the store's cron each minute.
-    expect(compose.services.agent.mem_limit).toBe('256m');
+    expect(compose.services.agent.mem_limit).toBe('384m');
+    // An init process as PID 1 reaps the watchers BusyBox's timeout leaves behind.
+    expect(compose.services.agent.init).toBe(true);
     // Created without deploying, so the variables are in place before the first start.
     const create = cloud.calls.indexOf('POST /services');
     expect(cloud.calls.findIndex((c) => c.endsWith('/envs/bulk'))).toBeGreaterThan(create);
@@ -372,8 +374,12 @@ describe('CoolifyProvisioner', () => {
     expect(command[2]).toBe(AGENT_COMMAND);
     const wp = 'php -d memory_limit=192M /usr/local/bin/wp';
     expect(AGENT_COMMAND).toContain(
-      `passthru('timeout ${CRON_LIMIT} ${wp} action-scheduler run --quiet'); passthru('timeout ${CRON_LIMIT} ${wp} cron event run --due-now --quiet');`,
+      `passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${wp} action-scheduler run --quiet'); passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${wp} cron event run --due-now --quiet');`,
     );
+    // Agent operations take the same lock, so a cron run and an operation never load WordPress together.
+    expect(WP_LOCK).toBe('/tmp/waas-wp.lock');
+    expect(AGENT_SCRIPT).toContain(`const WP_LOCK = '${WP_LOCK}';`);
+    expect(AGENT_SCRIPT).toContain('flock($wpLock, LOCK_EX)');
     // A cron run can't hold more than half a core, however long a store's queue is.
     expect(parse(store.compose).services.agent.cpus).toBe(0.5);
     // Only once configured, never while suspended, and nothing Compose or Coolify would interpolate.
@@ -1319,7 +1325,7 @@ describe('Store compose file', () => {
         expect(service.environment).toMatchObject({ WAAS_STORAGE_GB: w.storage, WAAS_EMAILS_PER_MONTH: w.emails });
       }
       expect(compose.services.db.mem_limit).toBe('384m');
-      expect(compose.services.agent.mem_limit).toBe('256m');
+      expect(compose.services.agent.mem_limit).toBe('384m');
     }
   });
 

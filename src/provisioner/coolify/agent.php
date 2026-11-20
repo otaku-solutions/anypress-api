@@ -25,6 +25,8 @@ const CRON_FLAG = CONTENT . '/.waas-cron';
  * leaves the cron flag off while it is there. Kept out of archives; a restore of a held store keeps it held.
  */
 const HOLD_FLAG = CONTENT . '/.waas-hold';
+/** The lock the cron loop holds around each run (WP_LOCK in compose.ts): operations take it too, so one WordPress loads at a time. */
+const WP_LOCK = '/tmp/waas-wp.lock';
 /** The page a suspended store shows. Rendered on suspend; kept out of snapshots, so it never spreads to other stores. */
 const PAGE = CONTENT . '/waas-unavailable.html';
 const DEFAULT_BRAND = ['name' => ''];
@@ -2178,6 +2180,12 @@ if (substr($raw, 0, 1) === '@') {
 }
 $args = json_decode(base64_decode($raw) ?: '{}', true);
 if (!is_array($args)) fail('arguments are not base64 JSON');
+
+// Wait for a cron run to finish before loading WordPress; the lock goes when this process ends.
+if ($op !== 'ping') {
+    $wpLock = fopen(WP_LOCK, 'c');
+    if ($wpLock === false || !flock($wpLock, LOCK_EX)) fail('cannot take the WordPress lock');
+}
 
 switch ($op) {
     case 'ping':

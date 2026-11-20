@@ -18,7 +18,7 @@ export const ENV_VALUE_LIMIT = 128 * 1024 - 64;
 const VERSION = /^\d+(\.\d+){0,2}$/;
 
 /** Per-store limits (docs/coolify.md). PHP's CPU, memory and workers come from the store's size (plans.ts). */
-const LIMITS = { web: { mem: '128m' }, db: { mem: '384m' }, agent: { mem: '256m', cpus: 0.5 }, redis: { mem: '64m', cpus: 0.25 } };
+const LIMITS = { web: { mem: '128m' }, db: { mem: '384m' }, agent: { mem: '384m', cpus: 0.5 }, redis: { mem: '64m', cpus: 0.25 } };
 
 /**
  * A store's object cache: its own Redis, holding what WordPress and its plugins look up again and again (options,
@@ -221,6 +221,12 @@ function wordpressImage(wordPressVersion: string, phpVersion: string): string {
 }
 
 const WP = 'php -d memory_limit=192M /usr/local/bin/wp';
+/**
+ * One WordPress at a time in the agent container: each cron command waits for this lock (BusyBox flock), and so does
+ * every agent operation (WP_LOCK in agent.php). Without it, an operation such as a snapshot and a cron run each loaded
+ * WordPress with all plugins inside the agent's memory cap, and the kernel killed one of them.
+ */
+export const WP_LOCK = '/tmp/waas-wp.lock';
 
 /** How long one cron command may run, in seconds (busybox `timeout` in the wordpress:cli image). */
 export const CRON_LIMIT = 120;
@@ -232,7 +238,8 @@ export const CRON_LIMIT = 120;
  * "task done" event, and on 2026-10-23 those jammed the queue that deploys and service starts wait in. The first
  * run waits a random 1 to 5 minutes, so stores that start together don't all run at once. Each command is stopped
  * after CRON_LIMIT seconds, as the Coolify task's timeout used to: a queue that never empties (an action that keeps
- * rescheduling itself) would otherwise keep one run going, and a core busy, forever. Written without `$`, which
+ * rescheduling itself) would otherwise keep one run going, and a core busy, forever. The clock starts once the command
+ * holds WP_LOCK, so waiting for an agent operation does not count against it. Written without `$`, which
  * Docker Compose and Coolify would both try to interpolate.
  */
 export const AGENT_COMMAND = [
@@ -240,7 +247,7 @@ export const AGENT_COMMAND = [
   'sleep(random_int(60, 300));',
   'while (true) {',
   "if (is_file('/var/www/html/wp-content/.waas-cron') && !is_file('/var/www/html/wp-content/.waas-suspended')) {",
-  `passthru('timeout ${CRON_LIMIT} ${WP} action-scheduler run --quiet'); passthru('timeout ${CRON_LIMIT} ${WP} cron event run --due-now --quiet');`,
+  `passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${WP} action-scheduler run --quiet'); passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${WP} cron event run --due-now --quiet');`,
   '}',
   'sleep(60);',
   '}',
@@ -368,6 +375,10 @@ export function renderCompose(input: {
         user: '33:33',
         environment: { ...wpEnv, WAAS_AGENT_GZ: AGENT_GZ, WAAS_INIT_PASSWORD: '${WAAS_INIT_PASSWORD:-}' },
         command: ['php', '-r', AGENT_COMMAND],
+        // An init process as PID 1 reaps orphans. The image's timeout is BusyBox's: it runs the command itself and
+        // forks a watcher, which is orphaned when the command ends. With the php loop as PID 1 nothing reaped those
+        // watchers, and every store gained two zombie processes a minute.
+        init: true,
         volumes: ['wp:/var/www/html'],
         depends_on: ['php'],
         mem_limit: LIMITS.agent.mem,

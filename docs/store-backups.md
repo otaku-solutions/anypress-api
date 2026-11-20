@@ -33,7 +33,7 @@ A backup is only worth something if it restores, so every night the API proves o
 
 A backup is about the size of the store's uploads plus its database, compressed. A fresh FluentCart store is a few MB; a store with a large media library can be hundreds of MB. With the defaults each store keeps at most 11 scheduled backups (7 daily + up to 4 weekly). At 100 stores of 100 MB that is about 110 GB in R2, roughly $1.65 a month at R2's $0.015/GB, with no egress charges.
 
-The work happens in each store's own agent container (256 MB memory limit), one store at a time, so it adds no more load than a manual backup does.
+The work happens in each store's own agent container (384 MB memory limit), one store at a time, so it adds no more load than a manual backup does.
 
 ## Restore
 

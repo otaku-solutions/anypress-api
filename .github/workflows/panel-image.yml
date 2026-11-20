@@ -1,0 +1,36 @@
+# The website assistant's chat panel (every store's /.assistant, Coolify app anypress-assistant-panel).
+# Builds its image on GitHub and, on main, publishes it and moves release/anypress-assistant-panel (image.yml).
+name: Assistant panel image
+
+on:
+  pull_request:
+    paths:
+      - 'agent/panel/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/panel-image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'agent/panel/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/panel-image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: anypress-assistant-panel-${{ github.ref }}
+  # Never cancel a publish half way; a newer push waits its turn.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      image: anypress-assistant-panel
+      context: agent/panel
+      file: agent/panel/Dockerfile
+      check-port: '3200'
+      check-path: /.assistant

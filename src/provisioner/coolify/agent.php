@@ -81,7 +81,9 @@ function curlTransfer(string $url, string $file, bool $upload): void
     $fh = fopen($file, $upload ? 'rb' : 'wb');
     $ch = curl_init($url);
     // A User-Agent: wordpress.org answers 403 to a request without one (PHP's curl sends none).
-    curl_setopt_array($ch, [CURLOPT_FAILONERROR => true, CURLOPT_FOLLOWLOCATION => !$upload, CURLOPT_CONNECTTIMEOUT => 30, CURLOPT_USERAGENT => 'AnyPress-store-agent']);
+    curl_setopt_array($ch, [CURLOPT_FAILONERROR => true, CURLOPT_FOLLOWLOCATION => !$upload, CURLOPT_CONNECTTIMEOUT => 30, CURLOPT_USERAGENT => 'AnyPress-store-agent',
+        // A stalled transfer gives up after two minutes under 1 KB/s: the operation holds WP_LOCK, and cron waits for it.
+        CURLOPT_LOW_SPEED_LIMIT => 1024, CURLOPT_LOW_SPEED_TIME => 120]);
     if ($upload) {
         curl_setopt_array($ch, [CURLOPT_UPLOAD => true, CURLOPT_INFILE => $fh, CURLOPT_INFILESIZE => filesize($file), CURLOPT_RETURNTRANSFER => true]);
     } else {

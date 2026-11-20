@@ -373,13 +373,18 @@ describe('CoolifyProvisioner', () => {
     expect(command[0]).toBe('php');
     expect(command[2]).toBe(AGENT_COMMAND);
     const wp = 'php -d memory_limit=192M /usr/local/bin/wp';
+    // The flags are checked again once the lock is held: a suspend may have held it while the loop waited.
+    const flag = '/var/www/html/wp-content/.waas-cron';
+    const suspended = '/var/www/html/wp-content/.waas-suspended';
     expect(AGENT_COMMAND).toContain(
-      `passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${wp} action-scheduler run --quiet'); passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${wp} cron event run --due-now --quiet');`,
+      `passthru('flock ${WP_LOCK} sh -c "test -f ${flag} && test ! -f ${suspended} && exec timeout ${CRON_LIMIT} ${wp} action-scheduler run --quiet"'); passthru('flock ${WP_LOCK} sh -c "test -f ${flag} && test ! -f ${suspended} && exec timeout ${CRON_LIMIT} ${wp} cron event run --due-now --quiet"');`,
     );
     // Agent operations take the same lock, so a cron run and an operation never load WordPress together.
     expect(WP_LOCK).toBe('/tmp/waas-wp.lock');
     expect(AGENT_SCRIPT).toContain(`const WP_LOCK = '${WP_LOCK}';`);
     expect(AGENT_SCRIPT).toContain('flock($wpLock, LOCK_EX)');
+    // A stalled upload or download can't hold the lock forever.
+    expect(AGENT_SCRIPT).toContain('CURLOPT_LOW_SPEED_TIME => 120');
     // A cron run can't hold more than half a core, however long a store's queue is.
     expect(parse(store.compose).services.agent.cpus).toBe(0.5);
     // Only once configured, never while suspended, and nothing Compose or Coolify would interpolate.

@@ -242,12 +242,22 @@ export const CRON_LIMIT = 120;
  * holds WP_LOCK, so waiting for an agent operation does not count against it. Written without `$`, which
  * Docker Compose and Coolify would both try to interpolate.
  */
+const CRON_FILE = '/var/www/html/wp-content/.waas-cron';
+const SUSPENDED_FILE = '/var/www/html/wp-content/.waas-suspended';
+
+/**
+ * One cron command: wait for WP_LOCK, check again that the store is configured and not suspended (an operation such as
+ * suspend may have held the lock while the loop waited), then run it under CRON_LIMIT.
+ */
+const cronRun = (wp: string) =>
+  `passthru('flock ${WP_LOCK} sh -c "test -f ${CRON_FILE} && test ! -f ${SUSPENDED_FILE} && exec timeout ${CRON_LIMIT} ${WP} ${wp}"');`;
+
 export const AGENT_COMMAND = [
   "file_put_contents('/tmp/waas-agent.php', gzdecode(base64_decode(getenv('WAAS_AGENT_GZ'))));",
   'sleep(random_int(60, 300));',
   'while (true) {',
-  "if (is_file('/var/www/html/wp-content/.waas-cron') && !is_file('/var/www/html/wp-content/.waas-suspended')) {",
-  `passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${WP} action-scheduler run --quiet'); passthru('flock ${WP_LOCK} timeout ${CRON_LIMIT} ${WP} cron event run --due-now --quiet');`,
+  `if (is_file('${CRON_FILE}') && !is_file('${SUSPENDED_FILE}')) {`,
+  `${cronRun('action-scheduler run --quiet')} ${cronRun('cron event run --due-now --quiet')}`,
   '}',
   'sleep(60);',
   '}',

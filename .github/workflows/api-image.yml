@@ -15,6 +15,7 @@ on:
       - 'sdk/typescript/src/**'
       - 'migrations/**'
       - 'openapi/**'
+      - '.dockerignore'
       - '.github/workflows/image.yml'
       - '.github/workflows/api-image.yml'
   push:
@@ -30,6 +31,7 @@ on:
       - 'sdk/typescript/src/**'
       - 'migrations/**'
       - 'openapi/**'
+      - '.dockerignore'
       - '.github/workflows/image.yml'
       - '.github/workflows/api-image.yml'
   workflow_dispatch:

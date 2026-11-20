@@ -80,9 +80,10 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.file }}
           push: true
+          # `latest` is main's; a manual run on another branch publishes only its commit's tag.
           tags: |
             ${{ env.IMAGE }}:sha-${{ github.sha }}
-            ${{ env.IMAGE }}:latest
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE) || '' }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=${{ inputs.image }}
       # Coolify deploys from this branch (release/<image>.Dockerfile), so it only ever picks up a commit whose image

@@ -15,6 +15,7 @@ on:
       - 'agent/tsconfig.json'
       - 'agent/src/**'
       - 'agent/skills/**'
+      - '.dockerignore'
       - '.github/workflows/image.yml'
       - '.github/workflows/assistant-image.yml'
   push:
@@ -30,6 +31,7 @@ on:
       - 'agent/tsconfig.json'
       - 'agent/src/**'
       - 'agent/skills/**'
+      - '.dockerignore'
       - '.github/workflows/image.yml'
       - '.github/workflows/assistant-image.yml'
   workflow_dispatch:

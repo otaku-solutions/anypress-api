@@ -25,6 +25,8 @@ const CRON_FLAG = CONTENT . '/.waas-cron';
  * leaves the cron flag off while it is there. Kept out of archives; a restore of a held store keeps it held.
  */
 const HOLD_FLAG = CONTENT . '/.waas-hold';
+/** The lock the cron loop holds around each run (WP_LOCK in compose.ts): operations take it too, so one WordPress loads at a time. */
+const WP_LOCK = '/tmp/waas-wp.lock';
 /** The page a suspended store shows. Rendered on suspend; kept out of snapshots, so it never spreads to other stores. */
 const PAGE = CONTENT . '/waas-unavailable.html';
 const DEFAULT_BRAND = ['name' => ''];
@@ -79,7 +81,9 @@ function curlTransfer(string $url, string $file, bool $upload): void
     $fh = fopen($file, $upload ? 'rb' : 'wb');
     $ch = curl_init($url);
     // A User-Agent: wordpress.org answers 403 to a request without one (PHP's curl sends none).
-    curl_setopt_array($ch, [CURLOPT_FAILONERROR => true, CURLOPT_FOLLOWLOCATION => !$upload, CURLOPT_CONNECTTIMEOUT => 30, CURLOPT_USERAGENT => 'AnyPress-store-agent']);
+    curl_setopt_array($ch, [CURLOPT_FAILONERROR => true, CURLOPT_FOLLOWLOCATION => !$upload, CURLOPT_CONNECTTIMEOUT => 30, CURLOPT_USERAGENT => 'AnyPress-store-agent',
+        // A stalled transfer gives up after two minutes under 1 KB/s: the operation holds WP_LOCK, and cron waits for it.
+        CURLOPT_LOW_SPEED_LIMIT => 1024, CURLOPT_LOW_SPEED_TIME => 120]);
     if ($upload) {
         curl_setopt_array($ch, [CURLOPT_UPLOAD => true, CURLOPT_INFILE => $fh, CURLOPT_INFILESIZE => filesize($file), CURLOPT_RETURNTRANSFER => true]);
     } else {
@@ -2178,6 +2182,12 @@ if (substr($raw, 0, 1) === '@') {
 }
 $args = json_decode(base64_decode($raw) ?: '{}', true);
 if (!is_array($args)) fail('arguments are not base64 JSON');
+
+// Wait for a cron run to finish before loading WordPress; the lock goes when this process ends.
+if ($op !== 'ping') {
+    $wpLock = fopen(WP_LOCK, 'c');
+    if ($wpLock === false || !flock($wpLock, LOCK_EX)) fail('cannot take the WordPress lock');
+}
 
 switch ($op) {
     case 'ping':

@@ -17,7 +17,7 @@ The AnyPress backend: a Hono API on Node 22 with Postgres and pg-boss jobs, whic
 
 ## Building and testing
 
-Run what CI runs before pushing: `npm ci`, `npm run lint`, `npm run typecheck`, `npm run sdk:check`, `npm test` (tests need a Postgres database in `TEST_DATABASE_URL`). `npm run deadcode` (Fallow, `.fallowrc.json`) fails on unused files, exports, types and packages: remove them rather than ignoring them; on a pull request CI also runs `fallow audit`, which fails on duplicated or overly complex code the change adds. After changing an OpenAPI file run `npm run sdk:generate` and commit the result. Merging to `main` redeploys the live API.
+Run what CI runs before pushing: `npm ci`, `npm run lint`, `npm run typecheck`, `npm run sdk:check`, `npm test` (tests need a Postgres database in `TEST_DATABASE_URL`). `npm run deadcode` (Fallow, `.fallowrc.json`) fails on unused files, exports, types and packages: remove them rather than ignoring them; on a pull request CI also runs `fallow audit`, which fails on duplicated or overly complex code the change adds. After changing an OpenAPI file run `npm run sdk:generate` and commit the result. Merging to `main` builds each changed app's image on GitHub and redeploys it from its release branch; the server never builds (release/README.md).
 
 ## Store templates
 

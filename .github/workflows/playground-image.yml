@@ -1,0 +1,36 @@
+# WordPress Playground for demo.anypress.site (Coolify app anypress-demo-playground).
+# Builds its image on GitHub and, on main, publishes it and moves release/anypress-demo-playground (image.yml).
+name: Demo playground image
+
+on:
+  pull_request:
+    paths:
+      - 'playground/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/playground-image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'playground/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/playground-image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: anypress-demo-playground-${{ github.ref }}
+  # Never cancel a publish half way; a newer push waits its turn.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      image: anypress-demo-playground
+      context: playground
+      file: playground/Dockerfile
+      check-port: '80'
+      check-path: /

@@ -1,0 +1,54 @@
+# The API (api.anypress.io, Coolify app waas-api). It needs its database to start, so it is only built.
+# Builds its image on GitHub and, on main, publishes it and moves release/anypress-api (image.yml).
+name: API image
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'src/**'
+      - 'mcp/src/**'
+      - 'mcp/skills/**'
+      - 'sdk/typescript/src/**'
+      - 'migrations/**'
+      - 'openapi/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/api-image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'src/**'
+      - 'mcp/src/**'
+      - 'mcp/skills/**'
+      - 'sdk/typescript/src/**'
+      - 'migrations/**'
+      - 'openapi/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/api-image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: anypress-api-${{ github.ref }}
+  # Never cancel a publish half way; a newer push waits its turn.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      image: anypress-api
+      context: .
+      file: Dockerfile

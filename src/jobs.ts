@@ -494,11 +494,11 @@ async function createVersion(pool: Pool, provisioner: Provisioner, secrets: Secr
     Status.Pending,
   ]);
 
-  // A copy for a storefront that follows another (src/routes/versions.ts) takes over now, with the storefront's stores.
+  // A copy for a storefront that follows another (src/routes/versions.ts) takes over now; the storefront's stores move tonight.
   if (built && boss) {
     await withTransaction(pool, async (client) => {
       const { rows: promote } = await client.query('SELECT 1 FROM versions WHERE id = $1 AND promote_when_done FOR UPDATE', [version.id]);
-      if (promote.length) await promoteVersion(client, boss, version.product_id, version.id);
+      if (promote.length) await promoteVersion(client, boss, version.product_id, version.id, 'tonight');
     });
   }
 

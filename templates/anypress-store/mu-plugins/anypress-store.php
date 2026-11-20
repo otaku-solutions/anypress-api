@@ -25,6 +25,11 @@ if (!defined('FLUENT_TOOLKIT_DISABLE_BUNDLED_MCP_ADAPTER')) {
     define('FLUENT_TOOLKIT_DISABLE_BUNDLED_MCP_ADAPTER', true);
 }
 
+// WordPress doesn't update itself in a store: its background core updates ran whenever WP-Cron got to them, so
+// owners saw "Briefly unavailable for scheduled maintenance" in the middle of their day. A store's WordPress comes
+// with its store template version, which the platform moves stores to at night.
+add_filter('auto_update_core', '__return_false');
+
 // Usage stats that would go to the plugin vendors, if an owner ever opted in.
 add_filter('fluent_booking/allow_share_stats', '__return_false');
 add_filter('fluentsupport_allow_share_essential', '__return_false');

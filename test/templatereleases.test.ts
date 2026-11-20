@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { moveStoresTonight } from '../src/promote.ts';
 import { checkTemplateReleases, nextVersionName, type ReleaseSource } from '../src/templatereleases.ts';
 import { Status } from '../src/status.ts';
 import { OWNER, setup, waitFor, type TestContext } from './helpers.ts';
@@ -47,7 +48,7 @@ describe('template releases', () => {
     expect(nextVersionName([])).toBe('v1.0.0');
   });
 
-  it('publishes only a checked release, builds it, then makes it production and moves the stores', async () => {
+  it('publishes only a checked release, builds it, then makes it production and moves the stores that night', async () => {
     // A store on the product's first production version.
     const first = await (await t.call('POST', '/v1/versions', { body: { name: 'v1.1.29', wordPressVersion: '7.1', phpVersion: '8.3', useCustomUpload: true } })).json();
     await waitFor(async () => (await t.pool.query('SELECT status FROM versions WHERE id = $1', [first.id])).rows[0]?.status === Status.Done);
@@ -72,6 +73,11 @@ describe('template releases', () => {
     await waitFor(async () => (await t.pool.query('SELECT status FROM versions WHERE id = $1', [rows[0].version_id])).rows[0]?.status === Status.Done);
     expect(await checkTemplateReleases(t.deps, t.productId, source)).toMatch(/v1\.1\.30 is production/);
     expect((await t.pool.query('SELECT is_production FROM versions WHERE id = $1', [rows[0].version_id])).rows[0].is_production).toBe(true);
+    // Not in the day: the store stays where it is until the nightly window.
+    expect((await t.pool.query('SELECT version_id, status FROM tenants WHERE id = $1', [store.id])).rows[0]).toEqual({ version_id: first.id, status: Status.Done });
+    expect(await moveStoresTonight(t.pool, t.boss)).toBe(1);
+    // Moved once: the next night has nothing to do.
+    expect(await moveStoresTonight(t.pool, t.boss)).toBe(0);
     await waitFor(async () => (await t.pool.query('SELECT version_id FROM tenants WHERE id = $1', [store.id])).rows[0]?.version_id === rows[0].version_id);
     expect((await t.pool.query('SELECT status FROM template_releases WHERE tag = $1', ['templates-v1.1.30'])).rows[0].status).toBe(Status.Done);
   });

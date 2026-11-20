@@ -11,7 +11,8 @@ import { Status } from './status.ts';
  * store template, checks every site type on WordPress Playground and only then publishes a templates-v* release on
  * GitHub, with a checks.txt of what passed. Every 15 minutes the API looks for a newer one, publishes its
  * anypress-store.zip as a new version of the store template product (STORE_TEMPLATE_PRODUCT_ID), and once that
- * version is built makes it production: the product's stores move to it (a failed move puts a store back) and the
+ * version is built makes it production: the product's stores move to it that night (src/promote.ts; a failed move
+ * puts a store back) and the
  * storefronts that follow it get a copy. The production version before stays as the way back.
  */
 
@@ -80,9 +81,9 @@ export async function checkTemplateReleases(deps: Deps, productId: string, sourc
       await finish(Status.Failed, `Version ${waiting.version_name} did not build`);
       return `${waiting.tag}: version ${waiting.version_name} did not build; production stays as it was`;
     }
-    await versions.setProduction(productId, waiting.version_id);
+    await versions.setProduction(productId, waiting.version_id, { moveStores: 'tonight' });
     await finish(Status.Done, null);
-    return `${waiting.tag}: ${waiting.version_name} is production; its stores are moving`;
+    return `${waiting.tag}: ${waiting.version_name} is production; its stores move tonight`;
   }
 
   const release = await newestCheckedRelease(source);

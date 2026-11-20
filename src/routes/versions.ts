@@ -158,10 +158,11 @@ export function versionService(deps: Deps) {
 
   /**
    * SetProductionVersionCommandResult out. Unless `moveStores` is false, every ready store of the product on
-   * another version moves to the new production version, so no store is left behind on an old one. A move that
+   * another version moves to the new production version, so no store is left behind on an old one; with 'tonight'
+   * (template releases) they move in the nightly window (src/promote.ts). A move that
    * fails its last retry puts that store back on the version it was on (jobs.ts) and is reported like any failed job.
    */
-  async function setProduction(productId: string, versionId: string, { moveStores = true }: { moveStores?: boolean } = {}) {
+  async function setProduction(productId: string, versionId: string, { moveStores = true }: { moveStores?: boolean | 'tonight' } = {}) {
     const version = await findVersion(productId, versionId);
     if (version.status !== Status.Done) throw badRequest(`Version ${version.id} is ${statusName(version.status)}, not Done`);
     const movingStores = await withTransaction(pool, async (client) => {

@@ -17,8 +17,11 @@ New store templates go live without anyone publishing them by hand.
    (a release made without the checks is never published). It checks `anypress-store.zip` against `SHA256SUMS`,
    publishes it as the next version of the store template product (`STORE_TEMPLATE_PRODUCT_ID`, named after the
    product's highest version, e.g. v1.1.30 after v1.1.29) and, once built, makes it production. The product's stores
-   move to it (a store whose move fails is put back), and storefronts that follow the product get a copy. The previous
-   production version stays, to go back to.
+   move to it that night, at 11:00 UTC (3 am Pacific in winter, 4 am in summer), after the nightly backups: a move
+   restarts each store and replaces its code, so it never happens while owners are working on their sites. A store
+   whose move fails is put back. Storefronts that follow the product get a copy, and their stores move the same way.
+   The previous production version stays, to go back to. WordPress doesn't update itself in stores (the template's
+   `anypress-store.php` turns its background core updates off); a store's WordPress comes with its template version.
 
 Without `STORE_TEMPLATE_PRODUCT_ID` the API publishes nothing by itself. The `template_releases` table keeps each
 release the API published, its version and whether it became production.

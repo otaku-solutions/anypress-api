@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { moveStoresTonight } from '../src/promote.ts';
 import { Status } from '../src/status.ts';
 import { basic, setup, TEST_ADMIN_TOKEN, waitFor, type TestContext, OWNER } from './helpers.ts';
 
@@ -50,7 +51,7 @@ describe('a storefront started from another', () => {
     expect(await follows(t.productId)).toBeNull();
   });
 
-  it('gets each new production version there, which takes over once built and moves its stores', async () => {
+  it('gets each new production version there, which takes over once built and moves its stores that night', async () => {
     const before = (await production(follower.id))!;
     const { id: store } = await json('POST', '/v1/tenants', { ...OWNER, name: 'Customer store' }, follower.auth);
     await waitFor(async () => (await t.pool.query('SELECT status FROM tenants WHERE id = $1', [store])).rows[0]?.status === Status.Done);
@@ -62,6 +63,9 @@ describe('a storefront started from another', () => {
       return id !== before && id;
     });
     expect(await sourceOf(after)).toBe(t.productId);
+    // The storefront's stores wait for the nightly window.
+    expect((await t.pool.query('SELECT version_id FROM tenants WHERE id = $1', [store])).rows[0].version_id).toBe(before);
+    expect(await moveStoresTonight(t.pool, t.boss)).toBe(1);
     await waitFor(async () => {
       const { rows } = await t.pool.query('SELECT status, version_id FROM tenants WHERE id = $1', [store]);
       return rows[0].status === Status.Done && rows[0].version_id === after;

@@ -24,6 +24,7 @@ import { startHostUpdates } from './hostupdates.ts';
 import { resolvePlatformProducts } from './platformproducts.ts';
 import { Secrets } from './secrets.ts';
 import { callSite, siteKey, siteKeyMaster, type SiteRequest } from './sitekeys.ts';
+import { startNightlyMoves } from './promote.ts';
 import { startStoreBackups } from './storebackups.ts';
 import Firecrawl from '@mendable/firecrawl-js';
 import { startReferences } from './references.ts';
@@ -64,6 +65,8 @@ const dbBackups = config.dbBackup
 await startDbBackups(boss, dbBackups, config.dbBackup?.schedule ?? '');
 // Nightly backup of every live store (docs/store-backups.md), unless STORE_BACKUP=off.
 await startStoreBackups(boss, pool, provisioner, handlers, config.storeBackup);
+// Template releases' store moves, in the nightly window after the backups (src/promote.ts).
+await startNightlyMoves(pool, boss);
 // References to build sites from (docs/references.md): read with Firecrawl and Figma's API when their keys are set.
 const firecrawl = config.references?.firecrawlApiKey ? new Firecrawl({ apiKey: config.references.firecrawlApiKey }) : undefined;
 await startReferences(boss, pool, { firecrawl, figmaToken: config.references?.figmaToken }, { config: () => config.references ?? { readsPerMonth: 0 } });

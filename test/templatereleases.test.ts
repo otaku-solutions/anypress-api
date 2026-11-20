@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { moveStoresTonight } from '../src/promote.ts';
+import { inNightlyWindow, moveStoresTonight } from '../src/promote.ts';
 import { checkTemplateReleases, nextVersionName, type ReleaseSource } from '../src/templatereleases.ts';
 import { Status } from '../src/status.ts';
 import { OWNER, setup, waitFor, type TestContext } from './helpers.ts';
@@ -86,5 +86,14 @@ describe('template releases', () => {
     const source = github([{ tag: 'templates-v1.1.32', files: { 'anypress-store.zip': ZIP, SHA256SUMS: sums(Buffer.from('other')), 'checks.txt': 'ok' } }]);
     expect(await checkTemplateReleases(t.deps, t.productId, source)).toMatch(/does not match SHA256SUMS/);
     expect((await t.pool.query('SELECT status FROM template_releases WHERE tag = $1', ['templates-v1.1.32'])).rows[0].status).toBe(Status.Failed);
+  });
+});
+
+describe('the nightly window', () => {
+  it('is 09:00 to 14:00 UTC', () => {
+    expect(inNightlyWindow(new Date('2026-11-21T11:00:00Z'))).toBe(true);
+    expect(inNightlyWindow(new Date('2026-11-21T13:59:00Z'))).toBe(true);
+    expect(inNightlyWindow(new Date('2026-11-21T14:00:00Z'))).toBe(false);
+    expect(inNightlyWindow(new Date('2026-11-21T19:30:00Z'))).toBe(false);
   });
 });

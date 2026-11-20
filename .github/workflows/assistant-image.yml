@@ -1,0 +1,52 @@
+# The website assistant's server (assistant-server.anypress.io, Coolify app anypress-assistant). It needs its database to start, so it is only built.
+# Builds its image on GitHub and, on main, publishes it and moves release/anypress-assistant (image.yml).
+name: Assistant image
+
+on:
+  pull_request:
+    paths:
+      - 'tsconfig.json'
+      - 'mcp/skills/**'
+      - '.claude/skills/wp-patterns/**'
+      - '.claude/skills/wp-block-themes/**'
+      - 'agent/Dockerfile'
+      - 'agent/package.json'
+      - 'agent/package-lock.json'
+      - 'agent/tsconfig.json'
+      - 'agent/src/**'
+      - 'agent/skills/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/assistant-image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tsconfig.json'
+      - 'mcp/skills/**'
+      - '.claude/skills/wp-patterns/**'
+      - '.claude/skills/wp-block-themes/**'
+      - 'agent/Dockerfile'
+      - 'agent/package.json'
+      - 'agent/package-lock.json'
+      - 'agent/tsconfig.json'
+      - 'agent/src/**'
+      - 'agent/skills/**'
+      - '.github/workflows/image.yml'
+      - '.github/workflows/assistant-image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: anypress-assistant-${{ github.ref }}
+  # Never cancel a publish half way; a newer push waits its turn.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      image: anypress-assistant
+      context: .
+      file: agent/Dockerfile

@@ -37,8 +37,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: anypress-api-${{ github.ref }}
-  # Never cancel a publish half way; a newer push waits its turn.
+  # A pull request's runs share a group and the newest cancels the rest. Every other run (a main push, a re-run, a
+  # manual run) gets its own group, so none can cancel another's publish; image.yml's newest-commit check decides
+  # which one moves `latest` and the release branch.
+  group: anypress-api-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:

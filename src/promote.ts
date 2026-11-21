@@ -41,6 +41,12 @@ async function moveStoresTo(client: Client, boss: PgBoss, productId: string, ver
 const NIGHTLY_MOVES_QUEUE = 'store-moves';
 const NIGHTLY_MOVES_SCHEDULE = '0 11 * * *';
 
+/** 09:00 to 14:00 UTC: 1 to 6 am Pacific in winter, 2 to 7 am in summer. */
+export function inNightlyWindow(at: Date): boolean {
+  const hour = at.getUTCHours();
+  return hour >= 9 && hour < 14;
+}
+
 /** Moves the stores of every production version waiting for the night. Answers how many moved. */
 export async function moveStoresTonight(pool: Pool, boss: PgBoss): Promise<number> {
   return withTransaction(pool, async (client) => {
@@ -58,6 +64,11 @@ export async function startNightlyMoves(pool: Pool, boss: PgBoss, log: Pick<Cons
   await ensureQueue(boss, NIGHTLY_MOVES_QUEUE, { retryLimit: 2, retryDelay: 300 });
   await boss.schedule(NIGHTLY_MOVES_QUEUE, NIGHTLY_MOVES_SCHEDULE);
   await boss.work(NIGHTLY_MOVES_QUEUE, { pollingIntervalSeconds: 60 }, async () => {
+    // A run queued at 11:00 but picked up late (the API was restarting) waits for the next night.
+    if (!inNightlyWindow(new Date())) {
+      log.log('nightly store moves: outside the nightly window; left for the next night');
+      return;
+    }
     const moved = await moveStoresTonight(pool, boss);
     if (moved) log.log(`nightly store moves: ${moved} moving to their production version`);
   });

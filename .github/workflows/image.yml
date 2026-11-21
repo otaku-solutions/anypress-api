@@ -40,6 +40,9 @@ jobs:
       IMAGE: ghcr.io/${{ github.repository_owner }}/${{ inputs.image }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history, so the release push can tell that it moves the branch forward (see Release).
+          fetch-depth: 0
       - uses: docker/setup-buildx-action@v3
       - name: Build
         uses: docker/build-push-action@v6
@@ -80,14 +83,24 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.file }}
           push: true
-          # `latest` is main's; a manual run on another branch publishes only its commit's tag.
-          tags: |
-            ${{ env.IMAGE }}:sha-${{ github.sha }}
-            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE) || '' }}
+          # Coolify deploys the exact commit's image (release/<image>.Dockerfile), so there is no `latest`.
+          tags: ${{ env.IMAGE }}:sha-${{ github.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=${{ inputs.image }}
-      # Coolify deploys from this branch (release/<image>.Dockerfile), so it only ever picks up a commit whose image
-      # is already published.
+      # Coolify deploys from this branch (release/<image>.Dockerfile), so it only ever picks up a commit whose image is
+      # already published. The push is never forced: GitHub accepts it only if it moves the branch forward, so a re-run
+      # of an older commit, or an older run that finishes after a newer one, leaves the newer release in place.
       - name: Release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: git push --force origin "HEAD:refs/heads/release/${{ inputs.image }}"
+        shell: bash
+        env:
+          BRANCH: release/${{ inputs.image }}
+        run: |
+          if git push origin "HEAD:refs/heads/$BRANCH"; then exit 0; fi
+          # Refused: fine only if a newer run already released a descendant of this commit (git says
+          # non-fast-forward or fetch first, depending on whether this checkout has that newer commit).
+          git fetch --quiet origin "refs/heads/$BRANCH"
+          if git merge-base --is-ancestor HEAD FETCH_HEAD; then
+            echo "$BRANCH already holds a newer commit; leaving it there"; exit 0
+          fi
+          exit 1

@@ -161,28 +161,42 @@ function anypress_slot_form(string $key): int
     ]);
     $built[count($built) - 1]['settings']['advanced_options'][0]['value'] = 'yes';
 
-    $form = (new \FluentForm\App\Services\Form\FormService())->store(['predefined' => 'blank_form', 'type' => 'form']);
-    $structure = json_decode($form->form_fields, true);
-    $structure['fields'] = $built;
-    $structure['submitButton']['settings']['button_ui']['text'] = $button;
-    // The theme's own button (colours, radius, font), not Fluent Forms' blue, as on the contact form (crm/setup.php).
-    foreach (['background_color', 'color'] as $colour) {
-        $structure['submitButton']['settings'][$colour] = '';
+    // A Fluent Forms error must never stop the page saving: the spot waits, and a half-made form is removed.
+    $form = null;
+    try {
+        $form = (new \FluentForm\App\Services\Form\FormService())->store(['predefined' => 'blank_form', 'type' => 'form']);
+        $structure = json_decode($form->form_fields, true);
+        $structure['fields'] = $built;
+        $structure['submitButton']['settings']['button_ui']['text'] = $button;
+        // The theme's own button (colours, radius, font), not Fluent Forms' blue, as on the contact form (crm/setup.php).
+        foreach (['background_color', 'color'] as $colour) {
+            $structure['submitButton']['settings'][$colour] = '';
+        }
+        $structure['submitButton']['attributes']['class'] = 'wp-element-button';
+        $form->title = $title;
+        $form->form_fields = wp_json_encode($structure);
+        $form->save();
+        $settings = \FluentForm\App\Models\FormMeta::where('form_id', $form->id)->where('meta_key', 'formSettings')->first();
+        if ($settings) {
+            $value = json_decode($settings->value, true);
+            $value['confirmation']['messageToShow'] = $thanks;
+            $value['confirmation']['samePageFormBehavior'] = 'hide_form';
+            $settings->value = wp_json_encode($value);
+            $settings->save();
+        }
+        $made[$key] = (int) $form->id;
+        update_option('anypress_slot_forms', $made, false);
+    } catch (\Throwable $e) {
+        if ($form && !empty($form->id)) {
+            try {
+                \FluentForm\App\Models\FormMeta::where('form_id', $form->id)->delete();
+                $form->delete();
+            } catch (\Throwable $ignored) {
+            }
+        }
+        error_log('anypress-starter-forms: ' . $e->getMessage());
+        return 0;
     }
-    $structure['submitButton']['attributes']['class'] = 'wp-element-button';
-    $form->title = $title;
-    $form->form_fields = wp_json_encode($structure);
-    $form->save();
-    $settings = \FluentForm\App\Models\FormMeta::where('form_id', $form->id)->where('meta_key', 'formSettings')->first();
-    if ($settings) {
-        $value = json_decode($settings->value, true);
-        $value['confirmation']['messageToShow'] = $thanks;
-        $value['confirmation']['samePageFormBehavior'] = 'hide_form';
-        $settings->value = wp_json_encode($value);
-        $settings->save();
-    }
-    $made[$key] = (int) $form->id;
-    update_option('anypress_slot_forms', $made, false);
 
     return (int) $form->id;
 }
@@ -239,8 +253,16 @@ function anypress_fill_slots(array $blocks, bool &$changed): array
             if ($block['attrs']['className'] === '') {
                 unset($block['attrs']['className']);
             }
-            $open = preg_replace('/ anypress-slot(?=[\s"])/', '', (string) reset($block['innerContent']), 1);
-            $close = (string) end($block['innerContent']);
+            // An empty spot saves as one piece of HTML: cut it at its closing tag.
+            if (count($block['innerContent']) < 2) {
+                $html = (string) reset($block['innerContent']);
+                $cut = (int) strrpos($html, '</');
+                [$open, $close] = [substr($html, 0, $cut), substr($html, $cut)];
+            } else {
+                $open = (string) reset($block['innerContent']);
+                $close = (string) end($block['innerContent']);
+            }
+            $open = preg_replace('/ anypress-slot(?=[\s"])/', '', $open, 1);
             $block['innerBlocks'] = [$fill];
             $block['innerContent'] = [$open, null, $close];
             $block['innerHTML'] = $open . $close;

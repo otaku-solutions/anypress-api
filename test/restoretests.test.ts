@@ -199,7 +199,7 @@ describe('nightly restore test', () => {
     await t.pool.query('DELETE FROM restore_tests');
     const tenant = await newTenant('Orphaned Test');
     const backupId = await nightlyBackup(tenant);
-    const { rows } = await t.pool.query("INSERT INTO restore_tests (tenant_id, backup_id, started_at) VALUES ($1, $2, now() - interval '40 minutes') RETURNING id", [tenant.id, backupId]);
+    const { rows } = await t.pool.query("INSERT INTO restore_tests (tenant_id, backup_id, started_at) VALUES ($1, $2, now() - interval '4 hours') RETURNING id", [tenant.id, backupId]);
     await t.boss.offWork(RESTORE_TEST_QUEUE);
     await startRestoreTests(t.boss, t.pool, t.provisioner, { schedule: '0 11 * * *' }, {}, { pollingIntervalSeconds: 0.5, handOverSeconds: 0, log: quiet });
     await waitFor(async () => (await tests()).some((r) => r.status === 'passed'), 20000);

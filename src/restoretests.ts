@@ -258,13 +258,13 @@ export async function startRestoreTests(
   await boss.schedule(RESTORE_TEST_QUEUE, config.schedule);
 
   await boss.work<{ busyRetry?: number; cutOff?: string }>(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async ([job]) => {
-    await cleanUp(pool, provisioner, log);
+    // A hand-over claims its test first, so the clean-up below deletes that test's store but can't cut it off itself.
     const cutOff = job?.data?.cutOff;
     if (cutOff && !(await takeOver(pool, cutOff, log))) return;
+    await cleanUp(pool, provisioner, log);
     // Busy before or after the pick: a move that finishes between the two still gets its retry.
     const busyBefore = await storesBusy(pool);
     const outcome = await runRestoreTest(pool, provisioner, alerts);
-    if (cutOff) await provisioner.deleteRestoreTest({ testId: cutOff }).catch((err: unknown) => log.error(`restore test ${cutOff}: test store not deleted: ${(err as Error).message}`));
     if (outcome) return logOutcome(log, outcome);
     if (!busyBefore && !(await storesBusy(pool))) return log.log('restore test: no store has a recent nightly backup');
     const busyRetry = job?.data?.busyRetry ?? 0;

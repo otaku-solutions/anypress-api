@@ -62,6 +62,12 @@ export interface CoolifyProvisionerConfig {
    * API's signed site-editing requests. Unset: stores get none and can't be edited through the API.
    */
   siteKey?: (storeId: string) => string;
+  /**
+   * A version's WordPress and PHP versions from the API's own records (the versions table). Read before
+   * the version's Service, so stores keep building, changing and restoring when that Service is gone
+   * (all of them were, on 2026-11-22). Unset, or no answer: the Service's description.
+   */
+  versionInfo?: (versionId: string) => Promise<Pick<VersionMeta, 'wordPressVersion' | 'phpVersion'> | undefined>;
 }
 
 /** An SMTP relay, e.g. toSend's. `from` must be on a domain verified with it. */
@@ -405,6 +411,8 @@ export class CoolifyProvisioner implements Provisioner {
   }
 
   private async versionMeta(versionId: string): Promise<VersionMeta> {
+    const known = await this.config.versionInfo?.(versionId);
+    if (known) return { kind: 'version', ...known };
     const service = await this.requireService(VERSIONS_ENV, versionName(versionId));
     const meta = parseMeta(service.description);
     if (meta?.kind !== 'version') throw new Error(`Coolify: ${versionName(versionId)} has no version metadata`);

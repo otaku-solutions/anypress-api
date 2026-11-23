@@ -280,7 +280,14 @@ class MemoryServiceIds {
 
 function provisioner(
   cloud: FakeCloud,
-  extra: { restartSeenTimeoutMs?: number; mail?: typeof MAIL; mailKeys?: FakeMailKeys; siteKey?: (storeId: string) => string; serviceIds?: MemoryServiceIds } = {},
+  extra: {
+    restartSeenTimeoutMs?: number;
+    mail?: typeof MAIL;
+    mailKeys?: FakeMailKeys;
+    siteKey?: (storeId: string) => string;
+    serviceIds?: MemoryServiceIds;
+    versionInfo?: (versionId: string) => Promise<{ wordPressVersion: string; phpVersion: string } | undefined>;
+  } = {},
 ) {
   return new CoolifyProvisioner({
     ...extra,
@@ -1269,6 +1276,21 @@ describe('CoolifyProvisioner', () => {
     cloud.agent = (op, args, service) => (op === 'restore' ? { status: 'failed', message: 'WAAS_ERROR wp db exited 1: broken dump' } : agent(op, args, service));
     await expect(p.testRestore({ testId: 't-2', backupId: 'b-1', versionId: VERSION_ID, size: 'small' })).rejects.toThrow('broken dump');
     expect([...cloud.services.values()].some((s) => s.name === 'store-restore-test-t-2')).toBe(false);
+  });
+
+  it("builds and restore-tests stores from the API's version records when the version's Service is gone", async () => {
+    for (const [uuid, s] of cloud.services) if (s.name === `version-${VERSION_ID}`) cloud.services.delete(uuid);
+    await expect(p.createStore(storeInput)).rejects.toThrow(`Coolify: no service version-${VERSION_ID}`);
+    const asked: string[] = [];
+    const q = provisioner(cloud, { versionInfo: async (id) => (asked.push(id), { wordPressVersion: '6.9', phpVersion: '8.3' }) });
+    cloud.objects.set('backups/b-1.zip', new Uint8Array(10));
+    const agent = cloud.agent;
+    cloud.agent = (op, args, service) => (op === 'verify' ? { status: 'success', message: 'WAAS_RESULT {"tables":40,"posts":1}' } : agent(op, args, service));
+    expect((await q.testRestore({ testId: 't-3', backupId: 'b-1', versionId: VERSION_ID, size: 'small' })).tables).toBe(40);
+    await q.createStore(storeInput);
+    const store = [...cloud.services.values()].find((s) => s.name === `store-${STORE_ID}`)!;
+    expect(store.compose).toContain('wordpress:6.9-php8.3-fpm');
+    expect(asked).toEqual([VERSION_ID, VERSION_ID]);
   });
 
   it('copies snapshots and base snapshots in the bucket', async () => {

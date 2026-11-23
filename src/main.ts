@@ -13,7 +13,7 @@ import { pushRenamedConstants } from './constantnames.ts';
 import { S3 } from './provisioner/s3.ts';
 import { startResellerInvoices } from './resellerinvoices.ts';
 import { CpuWatch } from './cpuwatch.ts';
-import { startRestoreTests } from './restoretests.ts';
+import { handOverRestoreTest, startRestoreTests } from './restoretests.ts';
 import { configurePush, loadPushConfig } from './push.ts';
 import { CoolifyProvisioner } from './provisioner/coolify/provisioner.ts';
 import { FakeProvisioner } from './provisioner/fake.ts';
@@ -125,6 +125,7 @@ if ('keepAliveTimeout' in server) {
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, async () => {
     server.close();
+    await handOverRestoreTest(boss).catch((err: unknown) => console.error(`restore test: hand-over failed: ${(err as Error).message}`));
     await boss.stop();
     await pool.end();
     process.exit(0);

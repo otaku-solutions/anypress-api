@@ -189,7 +189,7 @@ owner sees it in WordPress on Dashboard > Your plan, and the AnyPress dashboard 
 
 | Role | Site type | Plugins on |
 |---|---|---|
-| `website` | Website | FluentAuth, FluentSMTP, FluentCRM, Fluent Forms, FluentPlayer, FluentSnippets, Ninja Tables and Ninja Charts (tables and charts for pages), WP Social Ninja (reviews and testimonials), Rank Math, AutomatorWP, WP Fusion Lite, FluentToolkit |
+| `website` | Website | FluentAuth, FluentSMTP, FluentCRM, Fluent Forms, FluentPlayer, FluentSnippets, Ninja Tables and Ninja Charts (tables and charts for pages), WP Social Ninja (Google reviews, social feeds and a chat button), Rank Math, AutomatorWP, WP Fusion Lite, FluentToolkit |
 | `bookings` | Bookings | Website's, plus FluentBooking, FluentCart (to take payment for bookings, with no Shop or Cart page) with Customer Rights, and Fluent Support |
 | `online-store` | Online store | Website's, plus FluentCart with Customer Rights, Fluent Support and FluentAffiliate |
 | `community` | Community & courses | Website's, plus FluentCommunity, FluentEvent (events and RSVPs) and FluentCart with Customer Rights (to sell memberships and courses) |

@@ -138,6 +138,26 @@ describe('admin endpoints', () => {
     await admin('GET', `/admin/tenants/${crypto.randomUUID()}`, 404);
   });
 
+  it('overview: counts a failed backup only while it is open (live store, no newer backup that worked)', async () => {
+    const failed = async (age: string, deleted = false) =>
+      (
+        await t.pool.query(
+          `INSERT INTO tenant_backups (product_id, tenant_id, external_id, reason, status, date_created, tenant_deleted_at)
+           SELECT product_id, id, external_id, 'scheduled', $2, now() - $3::interval, CASE WHEN $4 THEN now() END FROM tenants WHERE id = $1 RETURNING id`,
+          [shop.id, Status.Failed, age, deleted],
+        )
+      ).rows[0].id as string;
+    const ids = [await failed('2 days')]; // the backup taken in the test above worked since
+    expect((await admin('GET', '/admin/overview')).backups.failed).toBe(0);
+    ids.push(await failed('-1 minute')); // newer than any that worked
+    const overview = await admin('GET', '/admin/overview');
+    expect(overview.backups.failed).toBe(1);
+    expect(overview.backups.done).toBeGreaterThan(0);
+    await t.pool.query('UPDATE tenant_backups SET tenant_deleted_at = now() WHERE id = $1', [ids[1]]);
+    expect((await admin('GET', '/admin/overview')).backups.failed).toBe(0);
+    await t.pool.query('DELETE FROM tenant_backups WHERE id = ANY($1)', [ids]);
+  });
+
   it("tenant plugins: what its site types turn on, what each is for, and whether the owner may add plugins", async () => {
     const { versionId } = await admin('GET', `/admin/tenants/${shop.id}`);
     await t.pool.query('UPDATE versions SET roles = NULL WHERE id = $1', [versionId]);

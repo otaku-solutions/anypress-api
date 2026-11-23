@@ -311,7 +311,8 @@ export function createJobHandlers(
     async run(data: JobData) {
       if (!data.type.startsWith('tenant.') || !('tenantId' in data)) await runJob(data);
       else await withProgress(pool, data.tenantId, data.type, await progressPlan(data), () => runJob(data));
-      await settleFailures(pool, data);
+      // Bookkeeping only: an error here must not fail (and so retry) a job whose work is done.
+      await settleFailures(pool, data).catch((err) => console.error(`Settling earlier failures of ${data.type} failed:`, err));
     },
 
     async maintenance() {
@@ -671,11 +672,16 @@ export async function stopBuiltVersions(pool: Pool, provisioner: Provisioner) {
   }
 }
 
+const SETTLED_BY_SUCCESS = new Set<JobData['type']>(['tenant.create', 'tenant.backup', 'version.create', 'version.delete']);
+
 /**
  * A job that worked makes good its earlier failures: the same kind of job on the same store or version.
  * They are dismissed (kept for the record, no longer listed or counted as failed).
  */
 async function settleFailures(pool: Pool, data: JobData): Promise<void> {
+  // Only jobs whose return means the work was done: others can return early without doing it
+  // (a move skipped for the store's state), and their failures wait for a retry, a dismiss or maintenance.
+  if (!SETTLED_BY_SUCCESS.has(data.type)) return;
   const tenantId = 'tenantId' in data ? data.tenantId : null;
   const versionId = 'versionId' in data ? data.versionId : null;
   if (!tenantId && !versionId) return;

@@ -74,7 +74,7 @@ When the owner adds their own connection (their SMTP server, toSend account, SES
 - `waas-plan.php` doesn't count it against the plan's monthly emails, so the owner's own sending can't hold FluentCRM's campaigns back.
 - A prospect email still goes only through the seller's mailbox: `waas-outreach.php` sends it itself (PHPMailer, the same settings) from a `pre_wp_mail` filter it adds as the last one, after every hold and recipient check, and fires `wp_mail_succeeded` or `wp_mail_failed` as `wp_mail()` would.
 
-FluentSMTP keeps a log of the email it sends through a connection (on by default, 14 days); with no connection there is none.
+FluentSMTP keeps a log of the email it sends through a connection (on by default, 14 days); with no connection it logs nothing it sent. An email the relay turns down still reaches FluentSMTP: `waas-mail.php` hands it to FluentSMTP's own PHP mail() handler as a failed send, with "AnyPress mail" as its email service. So it shows under FluentSMTP > Email Logs > Failed with the relay's error and a Retry button, goes to the owner's fallback connection if they set one, and sends the alerts the owner turned on under FluentSMTP > Alerts (Slack, Discord, Telegram or Pushover; FluentSMTP sends at most one a minute). An email the owner's own connection sends is logged and reported by FluentSMTP itself.
 
 ## The platform's count
 

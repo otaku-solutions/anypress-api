@@ -778,6 +778,7 @@ if (!is_array($waas_mail) || empty($waas_mail['host']) || empty($waas_mail['from
 // site's administrator (nobody reads the store's address on the relay's domain).
 add_action('phpmailer_init', function ($mailer) use ($waas_mail) {
     $GLOBALS['waas_mail_own_service'] = false;
+    $GLOBALS['waas_mail_relay'] = false;
     // A prospect email goes through the seller's own mailbox instead (waas-outreach.php), never the relay.
     if (!empty($GLOBALS['anypress_outreach_mailer'])) return;
     // The owner connected their own email service in FluentSMTP, which sends this email after this hook (it picks the
@@ -805,10 +806,57 @@ add_action('phpmailer_init', function ($mailer) use ($waas_mail) {
     if (!$mailer->getReplyToAddresses() && filter_var($admin, FILTER_VALIDATE_EMAIL) && $admin !== strtolower($waas_mail['from'])) $mailer->addReplyTo($admin, $name);
     $mailer->setFrom($waas_mail['from'], $name, false);
     $mailer->Sender = $waas_mail['from'];
+    // FluentSMTP picks a connection by this From next. With one (its PHP mail() connection, say) it logs and reports a
+    // failure itself; with none, waas_mail_report_failure() below does.
+    $GLOBALS['waas_mail_relay'] = !waas_mail_fluentsmtp_routes((string) $mailer->From);
 }, PHP_INT_MAX);
+add_action('wp_mail_succeeded', function () {
+    $GLOBALS['waas_mail_relay'] = false;
+});
 add_action('wp_mail_failed', function ($error) {
     error_log('AnyPress store mail: ' . $error->get_error_message());
+    $relay = !empty($GLOBALS['waas_mail_relay']);
+    $GLOBALS['waas_mail_relay'] = false;
+    if ($relay) waas_mail_report_failure($error);
 });
+
+/*
+ * FluentSMTP logs and reports only what its own connections send, and a store's email goes through the relay with no
+ * FluentSMTP connection (until the owner adds one). So an email the relay turned down is handed to
+ * FluentSMTP the way its own PHP mail() connection hands it a failure: a failed row in its Email Logs, where the owner
+ * can see why and resend it; the fallback connection, if the owner set one; and the failure alerts the owner turned on
+ * in its Notification Settings (Slack, Discord, Telegram or Pushover), at most one a minute.
+ */
+/** Whether FluentSMTP sends an email from this address through one of its connections, any kind. */
+function waas_mail_fluentsmtp_routes(string $from): bool
+{
+    if (!function_exists('fluentMailGetProvider')) return false;
+    try {
+        return is_object(fluentMailGetProvider($from));
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+
+function waas_mail_report_failure($error): void
+{
+    global $phpmailer;
+    $handler_class = 'FluentMail\\App\\Services\\Mailer\\Providers\\DefaultMail\\Handler';
+    if (!class_exists($handler_class) || !($phpmailer instanceof \PHPMailer\PHPMailer\PHPMailer)) return;
+    try {
+        $handler = new $handler_class();
+        $handler->setSettings(['provider' => 'AnyPress mail', 'sender_email' => (string) $phpmailer->From, 'force_from_name' => 'no', 'force_from_email' => 'no', 'return_path' => 'no']);
+        $handler->setPhpMailer($phpmailer);
+        // FluentSMTP's own first step of a send: it reads the email (recipients, sender, subject, body) for the log.
+        $read = \Closure::bind(function () { return $this->preSend(); }, $handler, $handler);
+        if (!$read()) return;
+        $handler->handleResponse(new WP_Error(500, $error->get_error_message()));
+    } catch (\PHPMailer\PHPMailer\Exception $e) {
+        // How FluentSMTP says an email failed, once it has logged and reported it.
+    } catch (\Throwable $e) {
+        error_log('AnyPress store mail: FluentSMTP could not record the failure: ' . $e->getMessage());
+    }
+}
 
 /*
  * The plugins' own email settings. Each Fluent plugin keeps a sender (From and Reply-To) of its own, shows it in its

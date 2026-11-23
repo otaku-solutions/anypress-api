@@ -21,6 +21,7 @@ const NAMES: Record<string, string> = {
   'easy-code-manager': 'FluentSnippets',
   'ninja-tables': 'Ninja Tables',
   'ninja-charts': 'Ninja Charts',
+  'wp-social-reviews': 'WP Social Ninja',
   'seo-by-rank-math': 'Rank Math SEO',
   automatorwp: 'AutomatorWP',
   'wp-fusion-lite': 'WP Fusion Lite',

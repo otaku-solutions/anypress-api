@@ -209,6 +209,8 @@ return static function (string $type): array {
         'course' => [
             'title' => 'Start your shop in 30 days',
             'description' => 'Nine short lessons that take you from idea to first sale.',
+            // Sold through FluentCart (community.php), in dollars.
+            'price' => 149,
             'sections' => [
                 ['Week 1: Your idea', [['Pick one thing to sell', 'Start with the thing people already ask you for.'], ['Who is it for?', 'Write down three people you know who would buy it.'], ['Price it properly', 'Materials, time, a fair wage and a margin.']]],
                 ['Week 2: Your shop', [['Photos that sell', 'Window light, a white card and a steady hand.'], ['Write a product page', 'What it is, who it is for, and why it is worth it.'], ['Set up checkout', 'Payments, shipping and the emails your customers get.']]],

@@ -324,6 +324,23 @@
       ]
     },
     {
+      "name": "wp-social-reviews",
+      "source": "wordpress-plugin:wp-social-reviews",
+      "places": [
+        {
+          "file": "templates/anypress-store/build.sh",
+          "match": "^wp\\-social\\-reviews (?<version>\\S+) (?<sha>[0-9a-f]{64})$"
+        },
+        {
+          "file": "templates/anypress-store/README.md",
+          "match": "^\\| [^|]+ \\| `wp-social-reviews` \\| (?<version>[^ |]+) \\|$"
+        }
+      ],
+      "run": [
+        "node templates/anypress-store/playground/blueprints.mjs"
+      ]
+    },
+    {
       "name": "seo-by-rank-math",
       "source": "wordpress-plugin:seo-by-rank-math",
       "places": [

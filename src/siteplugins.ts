@@ -13,6 +13,7 @@ const NAMES: Record<string, string> = {
   'fluent-booking': 'FluentBooking',
   'fluent-cart': 'FluentCart',
   'fluent-cart-customer-rights': 'FluentCart Customer Rights',
+  'shipping-for-fluent-cart': 'Shipping For FluentCart',
   'fluent-community': 'FluentCommunity',
   'fluent-event': 'FluentEvent',
   'fluent-player': 'FluentPlayer',

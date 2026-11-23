@@ -38,6 +38,10 @@ FluentCart Customer Rights 0.1.3 (`fluent-cart-customer-rights`, FluentCart's fr
 cancel: a cancellation form on the "Withdraw from contract" page FluentCart makes with its other pages, and each request
 kept on its order) is kept in [`plugins/`](plugins/) the same way and is on wherever FluentCart is.
 
+Shipping For FluentCart 1.0.0 (`shipping-for-fluent-cart`, FluentCart's free add-on: live Shippo rates at checkout,
+shipping labels and tracking updates once the owner connects their Shippo account) is kept in [`plugins/`](plugins/) the
+same way and is on for the online-store and everything site types.
+
 FluentEvent 1.0.1 (`fluent-event`, WPManageNinja's free events plugin: online and in-person events in calendars, RSVPs or
 sign-ups, a page for each event at `/event/<slug>/`, confirmation and reminder emails, and an Events tab in the community
 and each space) is kept in [`plugins/`](plugins/) the same way, from

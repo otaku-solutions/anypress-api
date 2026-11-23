@@ -3,6 +3,7 @@
  * The rest of the toolkit: Rank Math set up for the business (setup done, the business in the knowledge graph, a
  * description and focus keyword on every post), an example snippet in FluentSnippets, left off, and a video of the
  * business's kind of work in Fluent Player's library (freely licensed, from Wikimedia Commons, credited in its text).
+ * WP Social Ninja gets a WhatsApp chat button on every page (its free chat widget), with the business as its header.
  */
 if (defined('RANK_MATH_VERSION')) {
     update_option('rank_math_wizard_completed', true);
@@ -56,4 +57,27 @@ if (defined('FLUENT_PLAYER') && $clip) {
         'settings' => [
             'title' => $title, 'description' => 'Video: ' . $credit . ' From Wikimedia Commons.', 'preset_slug' => 'default', 'src' => $src, 'provider' => 'external', 'viewType' => 'video', 'mediaType' => 'video', 'post_status' => 'publish'],
     ]);
+}
+
+// WP Social Ninja's chat widget, as its Chat screen saves one: a WhatsApp button on every page, with the business's
+// name in the header. The number is the business's phone (a 555 number), or a made-up one when it lists none.
+if (class_exists('\\WPSocialReviews\\App\\Services\\Platforms\\Chats\\Config')) {
+    $phone = '';
+    foreach ($sample['pages']['contact'] ?? [] as [$label, $text]) {
+        if ($label === 'Phone') {
+            $phone = substr(preg_replace('/\D+/', '', $text), 0, 10);
+            break;
+        }
+    }
+    $chat = wp_insert_post(['post_title' => 'WhatsApp chat', 'post_type' => 'wpsr_social_chats', 'post_status' => 'publish']);
+    if ($chat) {
+        $config = \WPSocialReviews\App\Services\Platforms\Chats\Config::formatConfig([
+            'chat_settings' => [
+                'channels' => [['name' => 'whatsapp', 'label' => 'WhatsApp', 'credential' => '+1' . (strlen($phone) === 10 ? $phone : '5035550142'), 'webUrl' => 'https://api.whatsapp.com/send?phone=']],
+                'chat_button' => ['button_text' => 'Chat with us on WhatsApp'],
+                'template1' => ['chat_header' => ['name' => $sample['business']['name'], 'caption' => 'Usually replies within an hour'], 'chat_body' => ['greeting_msg' => 'Hi there! Have a question? Send us a message and we will get back to you.']],
+            ],
+        ]);
+        update_post_meta($chat, '_wpsr_template_config', 'utf8mb3' === $GLOBALS['wpdb']->get_col_charset($GLOBALS['wpdb']->posts, 'post_content') ? wp_json_encode($config) : serialize($config));
+    }
 }

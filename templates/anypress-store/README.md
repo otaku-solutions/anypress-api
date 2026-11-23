@@ -25,6 +25,7 @@ Plugins are listed in the order AnyPress shows them everywhere.
 | FluentSnippets | `easy-code-manager` | 10.58 |
 | Ninja Tables | `ninja-tables` | 5.5.1 |
 | Ninja Charts | `ninja-charts` | 3.5.0 |
+| WP Social Ninja | `wp-social-reviews` | 4.5.1 |
 | Rank Math SEO | `seo-by-rank-math` | 1.0.282 |
 | AutomatorWP | `automatorwp` | 6.1.1 |
 | WP Fusion Lite | `wp-fusion-lite` | 3.48.0 |
@@ -188,7 +189,7 @@ owner sees it in WordPress on Dashboard > Your plan, and the AnyPress dashboard 
 
 | Role | Site type | Plugins on |
 |---|---|---|
-| `website` | Website | FluentAuth, FluentSMTP, FluentCRM, Fluent Forms, FluentPlayer, FluentSnippets, Ninja Tables and Ninja Charts (tables and charts for pages), Rank Math, AutomatorWP, WP Fusion Lite, FluentToolkit |
+| `website` | Website | FluentAuth, FluentSMTP, FluentCRM, Fluent Forms, FluentPlayer, FluentSnippets, Ninja Tables and Ninja Charts (tables and charts for pages), WP Social Ninja (reviews and testimonials), Rank Math, AutomatorWP, WP Fusion Lite, FluentToolkit |
 | `bookings` | Bookings | Website's, plus FluentBooking, FluentCart (to take payment for bookings, with no Shop or Cart page) with Customer Rights, and Fluent Support |
 | `online-store` | Online store | Website's, plus FluentCart with Customer Rights, Fluent Support and FluentAffiliate |
 | `community` | Community & courses | Website's, plus FluentCommunity, FluentEvent (events and RSVPs) and FluentCart with Customer Rights (to sell memberships and courses) |

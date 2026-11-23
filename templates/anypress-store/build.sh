@@ -154,7 +154,7 @@ mkdir -p "$SITE/wp-content/plugins/anypress-client-data"
 cp "$HERE/roles.json" "$SITE/wp-content/plugins/anypress-client-data/roles.json"
 # Template settings kept in code (see mu-plugins/anypress-store.php).
 mkdir -p "$SITE/wp-content/mu-plugins"
-cp "$HERE/mu-plugins/anypress-store.php" "$HERE/mu-plugins/anypress-patterns.php" "$HERE/mu-plugins/anypress-crm-lifecycle.php" "$SITE/wp-content/mu-plugins/"
+cp "$HERE/mu-plugins/anypress-store.php" "$HERE/mu-plugins/anypress-patterns.php" "$HERE/mu-plugins/anypress-crm-lifecycle.php" "$HERE/mu-plugins/anypress-starter-forms.php" "$SITE/wp-content/mu-plugins/"
 
 [ "$WP_USER" = 33:33 ] && chown -R 33:33 "$SITE"
 

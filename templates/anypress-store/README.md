@@ -95,6 +95,8 @@ text, the Fluent Forms contact form, FluentCart's product list and, once the own
 calendar. `theme.sh check` runs the theme's own Playground check (from the pinned release) with these starter pages
 added: every page must parse into valid blocks, use the theme's tokens only and render without errors.
 
+Starter forms (`mu-plugins/anypress-starter-forms.php`): the AnyPress theme's starter pages leave a box for a form or a booking calendar (a group with the class `anypress-slot`, named `Form: <key>` or `Booking calendar`). When a page with one is saved, the box gets Fluent Forms' own block with a form made for it from Fluent Forms' fields (quote, project, onboarding, valuation, order, visit, consultation; made once, the first time a page needs it), shown one question at a time as Fluent Forms' conversational form, or FluentBooking's calendar block with every booking type. Boxes still waiting show nothing to visitors, and a calendar box shows as soon as the store has a calendar. People who send these forms become FluentCRM contacts like the contact form's senders.
+
 A new store also gets real pages made from them, once, on its first web request after the platform has set the owner's
 email and the site type has switched its plugins: published, in the main menu, with the theme's no-title page template.
 Website: Home, Services, About and Contact, with Home as the home page. Bookings: the same with the bookings home page.

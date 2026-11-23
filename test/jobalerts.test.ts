@@ -15,6 +15,8 @@ beforeAll(async () => {
   await waitFor(async () => ((await (await t.call('GET', `/v1/versions?versionId=${versionId}`)).json()) as any[])[0]?.statusCode === Status.Done);
   await t.call('PUT', '/v1/versions/production', { body: { versionId } });
   tenantId = ((await (await t.call('POST', '/v1/tenants', { body: { ...OWNER, name: 'Acme' } })).json()) as { id: string }).id;
+  // Built before the failures below are recorded: a build that works afterwards dismisses them.
+  await waitFor(async () => (await t.pool.query('SELECT status FROM tenants WHERE id = $1', [tenantId])).rows[0]?.status === Status.Done);
   await t.pool.query('UPDATE tenant_domains SET is_main = false WHERE tenant_id = $1', [tenantId]);
   await t.pool.query("INSERT INTO tenant_domains (tenant_id, domain_name, is_main) VALUES ($1, 'acme.anypress.site', true)", [tenantId]);
 }, 60_000);

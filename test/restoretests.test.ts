@@ -195,6 +195,18 @@ describe('nightly restore test', () => {
     await startRestoreTests(t.boss, t.pool, t.provisioner, undefined);
   }, 30000);
 
+  it('tests again on start when the last test is still running, as one cut off by the old process', async () => {
+    await t.pool.query('DELETE FROM restore_tests');
+    const tenant = await newTenant('Orphaned Test');
+    const backupId = await nightlyBackup(tenant);
+    const { rows } = await t.pool.query("INSERT INTO restore_tests (tenant_id, backup_id, started_at) VALUES ($1, $2, now() - interval '40 minutes') RETURNING id", [tenant.id, backupId]);
+    await t.boss.offWork(RESTORE_TEST_QUEUE);
+    await startRestoreTests(t.boss, t.pool, t.provisioner, { schedule: '0 11 * * *' }, {}, { pollingIntervalSeconds: 0.5, handOverSeconds: 0, log: quiet });
+    await waitFor(async () => (await tests()).some((r) => r.status === 'passed'), 20000);
+    expect((await t.pool.query('SELECT status FROM restore_tests WHERE id = $1', [rows[0].id])).rows[0].status).toBe('failed');
+    await startRestoreTests(t.boss, t.pool, t.provisioner, undefined);
+  }, 30000);
+
   it('logs the last failure on start and tests again when it failed over two hours ago', async () => {
     await t.pool.query('DELETE FROM restore_tests');
     const tenant = await newTenant('Failed Last Night');

@@ -147,7 +147,12 @@ export async function runRestoreTest(
  * process, already busy, never takes it).
  */
 export async function handOverRestoreTest(boss: PgBoss, startAfterSeconds = 60): Promise<void> {
-  if (running) await boss.send(RESTORE_TEST_QUEUE, { cutOff: running }, { startAfter: startAfterSeconds });
+  if (running) await queueCutOff(boss, running, startAfterSeconds);
+}
+
+/** One job per cut-off test, though both the stopping and the starting process may send it. */
+function queueCutOff(boss: PgBoss, testId: string, startAfterSeconds: number) {
+  return boss.send(RESTORE_TEST_QUEUE, { cutOff: testId }, { startAfter: startAfterSeconds, singletonKey: `cut-off-${testId}`, singletonSeconds: 6 * 3600 });
 }
 
 export interface RestoreTestStatus {
@@ -214,8 +219,9 @@ export async function startRestoreTests(
   {
     pollingIntervalSeconds = 60,
     busyRetrySeconds = BUSY_RETRY_SECONDS,
+    handOverSeconds = 60,
     log = console,
-  }: { pollingIntervalSeconds?: number; busyRetrySeconds?: number; log?: Pick<Console, 'log' | 'error'> } = {},
+  }: { pollingIntervalSeconds?: number; busyRetrySeconds?: number; handOverSeconds?: number; log?: Pick<Console, 'log' | 'error'> } = {},
 ): Promise<void> {
   if (!config) {
     if (await boss.getQueue(RESTORE_TEST_QUEUE)) await boss.unschedule(RESTORE_TEST_QUEUE);
@@ -257,5 +263,8 @@ export async function startRestoreTests(
   const last = await lastRestoreTest(pool);
   if (last?.status === 'failed') log.error(`restore test ${last.id} (${last.started_at.toISOString()}) failed: ${last.error}`);
 
-  if (await restoreTestDue(pool)) await boss.send(RESTORE_TEST_QUEUE, {}, { singletonKey: last?.status === 'failed' ? 'retry-failed' : 'catch-up', singletonSeconds: 3600 });
+  // A test still running when this process starts belongs to a process that is stopping (a deploy) or
+  // already gone: it can't finish, so test again. When it was the old process's, its hand-over is the same job.
+  if (last?.status === 'running') await queueCutOff(boss, last.id, handOverSeconds);
+  else if (await restoreTestDue(pool)) await boss.send(RESTORE_TEST_QUEUE, {}, { singletonKey: last?.status === 'failed' ? 'retry-failed' : 'catch-up', singletonSeconds: 3600 });
 }

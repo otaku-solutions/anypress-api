@@ -216,11 +216,15 @@ export async function startRestoreTests(
     } catch (err) {
       log.error(`restore test: cleanup failed: ${(err as Error).message}`);
     }
+    // Busy before or after the pick: a move that finishes between the two still gets its retry.
+    const busyBefore = await storesBusy(pool);
     const outcome = await runRestoreTest(pool, provisioner, alerts);
     const busyRetry = job?.data?.busyRetry ?? 0;
-    if (!outcome && busyRetry < BUSY_RETRIES && (await storesBusy(pool))) {
-      log.log(`restore test: stores are busy (moving to a new version?); trying again in ${busyRetrySeconds} seconds`);
-      await boss.send(RESTORE_TEST_QUEUE, { busyRetry: busyRetry + 1 }, { startAfter: busyRetrySeconds });
+    if (!outcome && (busyBefore || (await storesBusy(pool)))) {
+      if (busyRetry < BUSY_RETRIES) {
+        log.log(`restore test: stores are busy (moving to a new version?); trying again in ${busyRetrySeconds} seconds`);
+        await boss.send(RESTORE_TEST_QUEUE, { busyRetry: busyRetry + 1 }, { startAfter: busyRetrySeconds });
+      } else log.error(`restore test: stores still busy after ${BUSY_RETRIES} tries; left for the next night`);
     } else if (!outcome) log.log('restore test: no store has a recent nightly backup');
     else if (outcome.status === 'passed') log.log(`restore test ${outcome.id}: passed (store ${outcome.tenantId}, backup ${outcome.backupId})`);
     else log.error(`restore test ${outcome.id}: failed (store ${outcome.tenantId}, backup ${outcome.backupId}): ${outcome.error}`);

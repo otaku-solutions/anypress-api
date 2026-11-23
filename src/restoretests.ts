@@ -63,8 +63,9 @@ export interface RestoreTestOutcome {
 }
 
 /**
- * Marks tests cut off mid-way as failed and deletes any test store they left, or that a finished test
- * failed to delete (deleteRestoreTest does nothing when there is none). Returns how many were cut off.
+ * Marks tests cut off mid-way as failed and deletes any test store they left, or that a test finished
+ * in the last few days failed to delete (deleteRestoreTest does nothing when there is none), however
+ * long ago it started. Returns how many were cut off.
  */
 export async function cleanUpInterruptedTests(pool: Pool, provisioner: Provisioner): Promise<number> {
   const { rows } = await pool.query<{ id: string }>(
@@ -73,7 +74,7 @@ export async function cleanUpInterruptedTests(pool: Pool, provisioner: Provision
     [INTERRUPTED_AFTER_HOURS, CUT_OFF_ERROR],
   );
   const { rows: finished } = await pool.query<{ id: string }>(
-    "SELECT id FROM restore_tests WHERE status <> 'running' AND started_at > now() - make_interval(days => $1)",
+    "SELECT id FROM restore_tests WHERE status <> 'running' AND COALESCE(finished_at, started_at) > now() - make_interval(days => $1)",
     [LEFTOVER_DAYS],
   );
   const ids = new Set([...rows, ...finished].map((row) => row.id));

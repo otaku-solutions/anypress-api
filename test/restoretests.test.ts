@@ -144,6 +144,19 @@ describe('nightly restore test', () => {
     expect(deleted).toContain(rows[0].id);
   });
 
+  it('deletes the test store of an old test that a hand-over marked failed and then stopped before deleting', async () => {
+    const tenant = await newTenant('Claimed Then Stopped');
+    const backupId = await nightlyBackup(tenant);
+    const { rows } = await t.pool.query(
+      "INSERT INTO restore_tests (tenant_id, backup_id, status, error, started_at, finished_at) VALUES ($1, $2, 'failed', 'cut off', now() - interval '8 days', now()) RETURNING id",
+      [tenant.id, backupId],
+    );
+    const deleted: string[] = [];
+    const provisioner = Object.create(t.provisioner, { deleteRestoreTest: { value: async ({ testId }: { testId: string }) => void deleted.push(testId) } });
+    await cleanUpInterruptedTests(t.pool, provisioner);
+    expect(deleted).toContain(rows[0].id);
+  });
+
   it('schedules the nightly run, runs a catch-up when one is due, and unschedules when off', async () => {
     await t.pool.query('DELETE FROM restore_tests');
     await startRestoreTests(t.boss, t.pool, t.provisioner, { schedule: '0 11 * * *' }, {}, { pollingIntervalSeconds: 0.5, log: quiet });

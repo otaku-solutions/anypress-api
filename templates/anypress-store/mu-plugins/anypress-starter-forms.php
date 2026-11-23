@@ -20,73 +20,71 @@
  */
 function anypress_slot_forms(): array
 {
-    $phone = ['input_text', 'phone', __('Phone number', 'anypress'), false, ''];
+    $phone = ['input_text', 'phone', __('Phone Number', 'anypress'), false, ''];
     $message = fn (string $label, string $help = '') => ['textarea', 'message', $label, false, $help];
 
     return [
         'quote' => [__('Request a quote', 'anypress'), __('Send my request', 'anypress'), __('Thank you. We will look at the details and send your quote within two working days.', 'anypress'), [
             $phone,
-            ['select', 'service', __('What do you need?', 'anypress'), true, [__('First service', 'anypress'), __('Second service', 'anypress'), __('Third service', 'anypress'), __('Something else', 'anypress')]],
-            ['textarea', 'details', __('Tell us about the job', 'anypress'), true, __('What it is, how big, and anything we should know.', 'anypress')],
-            ['input_text', 'location', __('Where is it?', 'anypress'), false, __('Town or postcode.', 'anypress')],
-            ['input_radio', 'timing', __('When do you need it?', 'anypress'), false, [__('As soon as possible', 'anypress'), __('Within a month', 'anypress'), __('In the next few months', 'anypress'), __('Just planning', 'anypress')]],
-            ['input_date', 'deadline', __('Is there a date it must be done by?', 'anypress'), false, __('Leave it empty if there isn\'t one.', 'anypress')],
-            ['select', 'budget', __('Rough budget', 'anypress'), false, [__('Under $1,000', 'anypress'), __('$1,000 to $5,000', 'anypress'), __('$5,000 to $20,000', 'anypress'), __('Over $20,000', 'anypress'), __('Not sure yet', 'anypress')]],
-            ['input_radio', 'reply', __('How should we reply?', 'anypress'), false, [__('Email', 'anypress'), __('Phone call', 'anypress'), __('Text message', 'anypress')]],
+            ['select', 'service', __('What Do You Need?', 'anypress'), true, [__('First service', 'anypress'), __('Second service', 'anypress'), __('Third service', 'anypress'), __('Something else', 'anypress')]],
+            ['textarea', 'details', __('Tell Us About the Job', 'anypress'), true, __('What it is, how big, and anything we should know.', 'anypress')],
+            ['input_text', 'location', __('Where Is It?', 'anypress'), false, __('Town or postcode.', 'anypress')],
+            ['input_radio', 'timing', __('When Do You Need It?', 'anypress'), false, [__('As soon as possible', 'anypress'), __('Within a month', 'anypress'), __('In the next few months', 'anypress'), __('Just planning', 'anypress')]],
+            ['select', 'budget', __('Rough Budget', 'anypress'), false, [__('Under $1,000', 'anypress'), __('$1,000 to $5,000', 'anypress'), __('$5,000 to $20,000', 'anypress'), __('Over $20,000', 'anypress'), __('Not sure yet', 'anypress')]],
+            ['input_radio', 'reply', __('How Should We Reply?', 'anypress'), false, [__('Email', 'anypress'), __('Phone call', 'anypress'), __('Text message', 'anypress')]],
         ]],
         'project' => [__('Project inquiry', 'anypress'), __('Send my project', 'anypress'), __('Thank you. We read every project ourselves and reply within two working days, with questions or a time to talk.', 'anypress'), [
-            ['input_text', 'company', __('Company or organisation', 'anypress'), false, ''],
-            ['input_url', 'website', __('Your current website, if you have one', 'anypress'), false, ''],
-            ['input_checkbox', 'help', __('What can we help with?', 'anypress'), true, [__('A new project', 'anypress'), __('Improving something you have', 'anypress'), __('Ongoing help', 'anypress'), __('Advice first', 'anypress')]],
-            ['textarea', 'goals', __('What should the project achieve?', 'anypress'), true, __('The problem to solve and what success looks like.', 'anypress')],
+            ['input_text', 'company', __('Company or Organisation', 'anypress'), false, ''],
+            ['input_url', 'website', __('Your Current Website, If You Have One', 'anypress'), false, ''],
+            ['input_checkbox', 'help', __('What Can We Help With?', 'anypress'), true, [__('A new project', 'anypress'), __('Improving something you have', 'anypress'), __('Ongoing help', 'anypress'), __('Advice first', 'anypress')]],
+            ['textarea', 'goals', __('What Should the Project Achieve?', 'anypress'), true, __('The problem to solve and what success looks like.', 'anypress')],
             ['select', 'budget', __('Budget', 'anypress'), false, [__('Under $5,000', 'anypress'), __('$5,000 to $15,000', 'anypress'), __('$15,000 to $50,000', 'anypress'), __('Over $50,000', 'anypress'), __('Not sure yet', 'anypress')]],
-            ['input_date', 'deadline', __('Is there a deadline?', 'anypress'), false, __('Leave it empty if there isn\'t one.', 'anypress')],
-            ['input_text', 'deciders', __('Who else will decide?', 'anypress'), false, __('Names and roles, so we can include them from the start.', 'anypress')],
-            ['input_radio', 'source', __('How did you hear about us?', 'anypress'), false, [__('Search', 'anypress'), __('A recommendation', 'anypress'), __('Social media', 'anypress'), __('Something else', 'anypress')]],
+            ['input_date', 'deadline', __('Is There a Deadline?', 'anypress'), false, __('Leave it empty if there isn\'t one.', 'anypress')],
+            ['input_radio', 'source', __('How Did You Hear About Us?', 'anypress'), false, [__('Search', 'anypress'), __('A recommendation', 'anypress'), __('Social media', 'anypress'), __('Something else', 'anypress')]],
         ]],
         'onboarding' => [__('Client onboarding', 'anypress'), __('Send my details', 'anypress'), __('Thank you, that is everything we need. We will be in touch to book your first meeting.', 'anypress'), [
             $phone,
-            ['input_text', 'company', __('Business name', 'anypress'), true, ''],
-            ['address', 'address', __('Business address', 'anypress'), false, ''],
+            ['input_text', 'company', __('Business Name', 'anypress'), true, ''],
+            ['address', 'address', __('Business Address', 'anypress'), false, ''],
             ['input_url', 'website', __('Website', 'anypress'), false, ''],
-            ['input_text', 'billing', __('Who should invoices go to?', 'anypress'), false, __('Name and email, if it isn\'t you.', 'anypress')],
-            ['textarea', 'goals', __('What do you want to get from working with us?', 'anypress'), true, ''],
-            ['textarea', 'access', __('Accounts and tools we will need', 'anypress'), false, __('List them here. Never type passwords into a form: we will ask for access safely.', 'anypress')],
-            ['input_radio', 'contact', __('How do you like to be kept up to date?', 'anypress'), false, [__('Email', 'anypress'), __('Phone call', 'anypress'), __('A short call each week', 'anypress')]],
+            ['input_text', 'billing', __('Who Should Invoices Go To?', 'anypress'), false, __('Name and email, if it isn\'t you.', 'anypress')],
+            ['textarea', 'goals', __('What Do You Want to Get from Working with Us?', 'anypress'), true, ''],
+            ['textarea', 'access', __('Accounts and Tools We Will Need', 'anypress'), false, __('List them here. Never type passwords into a form: we will ask for access safely.', 'anypress')],
+            ['input_radio', 'contact', __('How Do You Like to Be Kept Up to Date?', 'anypress'), false, [__('Email', 'anypress'), __('Phone call', 'anypress'), __('A short call each week', 'anypress')]],
         ]],
         'valuation' => [__('Home valuation', 'anypress'), __('Ask for my valuation', 'anypress'), __('Thank you. An agent will call you within one working day to arrange a visit.', 'anypress'), [
             $phone,
-            ['input_radio', 'looking', __('Are you buying or selling?', 'anypress'), true, [__('Selling', 'anypress'), __('Buying', 'anypress'), __('Both', 'anypress'), __('Renting out', 'anypress')]],
-            ['address', 'address', __('The property\'s address', 'anypress'), false, ''],
-            ['select', 'type', __('Type of home', 'anypress'), false, [__('House', 'anypress'), __('Townhouse', 'anypress'), __('Apartment', 'anypress'), __('Land', 'anypress'), __('Other', 'anypress')]],
+            ['input_radio', 'looking', __('Are You Buying or Selling?', 'anypress'), true, [__('Selling', 'anypress'), __('Buying', 'anypress'), __('Both', 'anypress'), __('Renting out', 'anypress')]],
+            ['address', 'address', __('The Property\'s Address', 'anypress'), false, ''],
+            ['select', 'type', __('Type of Home', 'anypress'), false, [__('House', 'anypress'), __('Townhouse', 'anypress'), __('Apartment', 'anypress'), __('Land', 'anypress'), __('Other', 'anypress')]],
             ['select', 'bedrooms', __('Bedrooms', 'anypress'), false, ['1', '2', '3', '4', __('5 or more', 'anypress')]],
-            ['input_radio', 'timing', __('When are you thinking of moving?', 'anypress'), false, [__('Within 3 months', 'anypress'), __('3 to 6 months', 'anypress'), __('6 to 12 months', 'anypress'), __('Just curious', 'anypress')]],
-            $message(__('Anything else we should know?', 'anypress')),
+            ['input_radio', 'timing', __('When Are You Thinking of Moving?', 'anypress'), false, [__('Within 3 months', 'anypress'), __('3 to 6 months', 'anypress'), __('6 to 12 months', 'anypress'), __('Just curious', 'anypress')]],
+            $message(__('Anything Else We Should Know?', 'anypress')),
         ]],
         'order' => [__('Pickup order', 'anypress'), __('Place my order', 'anypress'), __('Thank you. We will text you to confirm your order and its time. You pay when you collect it or when it arrives.', 'anypress'), [
-            ['input_text', 'phone', __('Phone number', 'anypress'), true, __('We text you when your order is ready.', 'anypress')],
-            ['input_radio', 'collect', __('Pickup or delivery?', 'anypress'), true, [__('Pickup', 'anypress'), __('Delivery', 'anypress')]],
-            ['address', 'address', __('Delivery address', 'anypress'), false, 'when:collect=' . __('Delivery', 'anypress')],
-            ['textarea', 'items', __('What would you like?', 'anypress'), true, __('One item per line, with how many. For example: 2 margherita, 1 garden salad.', 'anypress')],
-            ['input_date', 'pickup', __('Day and time you want it', 'anypress'), true, ''],
-            ['input_checkbox', 'dietary', __('Any allergies or dietary needs?', 'anypress'), false, [__('Vegetarian', 'anypress'), __('Vegan', 'anypress'), __('Gluten free', 'anypress'), __('Nut allergy', 'anypress'), __('Dairy free', 'anypress')]],
-            $message(__('Notes for the kitchen', 'anypress')),
+            ['input_text', 'phone', __('Phone Number', 'anypress'), true, __('We text you when your order is ready.', 'anypress')],
+            ['input_radio', 'collect', __('Pickup or Delivery?', 'anypress'), true, [__('Pickup', 'anypress'), __('Delivery', 'anypress')]],
+            ['address', 'address', __('Delivery Address', 'anypress'), false, 'when:collect=' . __('Delivery', 'anypress')],
+            ['textarea', 'items', __('What Would You Like?', 'anypress'), true, __('One item per line, with how many. For example: 2 margherita, 1 garden salad.', 'anypress')],
+            ['input_date', 'pickup', __('Day and Time You Want It', 'anypress'), true, ''],
+            ['input_checkbox', 'dietary', __('Any Allergies or Dietary Needs?', 'anypress'), false, [__('Vegetarian', 'anypress'), __('Vegan', 'anypress'), __('Gluten free', 'anypress'), __('Nut allergy', 'anypress'), __('Dairy free', 'anypress')]],
+            $message(__('Notes for the Kitchen', 'anypress')),
         ]],
         'visit' => [__('Plan your visit', 'anypress'), __('Let us know', 'anypress'), __('Thank you. Someone will look out for you at the door and save you a seat.', 'anypress'), [
             $phone,
-            ['select', 'service', __('Which service will you come to?', 'anypress'), false, [__('Sunday 9am', 'anypress'), __('Sunday 11am', 'anypress'), __('Not sure yet', 'anypress')]],
-            ['input_number', 'adults', __('How many adults?', 'anypress'), false, ''],
-            ['input_number', 'children', __('How many children?', 'anypress'), false, __('Children have their own groups during the service.', 'anypress')],
-            ['textarea', 'prayer', __('Is there anything we can pray about for you?', 'anypress'), false, __('Optional, and kept private to the pastoral team.', 'anypress')],
+            ['select', 'service', __('Which Service Will You Come To?', 'anypress'), false, [__('Sunday 9am', 'anypress'), __('Sunday 11am', 'anypress'), __('Not sure yet', 'anypress')]],
+            ['input_number', 'adults', __('How Many Adults?', 'anypress'), false, ''],
+            ['input_number', 'children', __('How Many Children?', 'anypress'), false, __('Children have their own groups during the service.', 'anypress')],
+            ['textarea', 'prayer', __('Is There Anything We Can Pray About for You?', 'anypress'), false, __('Optional, and kept private to the pastoral team.', 'anypress')],
         ]],
         'consultation' => [__('Consultation request', 'anypress'), __('Send my request', 'anypress'), __('Thank you. We will check for conflicts and call you within one working day. Pick a time below if you have not yet.', 'anypress'), [
             $phone,
-            ['input_radio', 'area', __('What do you need help with?', 'anypress'), true, [__('Family law', 'anypress'), __('Business law', 'anypress'), __('Wills and estates', 'anypress'), __('Criminal defense', 'anypress'), __('Something else', 'anypress')]],
-            ['textarea', 'parties', __('Who else is involved?', 'anypress'), false, __('Names of the other people or companies, so we can check we have never acted for them.', 'anypress')],
-            ['input_radio', 'court', __('Is there a court date or deadline coming up?', 'anypress'), false, [__('Yes', 'anypress'), __('No', 'anypress'), __('Not sure', 'anypress')]],
-            ['input_date', 'court_date', __('When is it?', 'anypress'), false, 'when:court=' . __('Yes', 'anypress')],
-            ['textarea', 'summary', __('A few lines about your situation', 'anypress'), true, __('Keep the details for the meeting itself.', 'anypress')],
-            ['input_radio', 'reply', __('How should we contact you?', 'anypress'), false, [__('Phone call', 'anypress'), __('Email', 'anypress')]],
+            ['input_radio', 'area', __('What Do You Need Help With?', 'anypress'), true, [__('Family law', 'anypress'), __('Business law', 'anypress'), __('Wills and estates', 'anypress'), __('Criminal defense', 'anypress'), __('Something else', 'anypress')]],
+            ['textarea', 'parties', __('Who Else Is Involved?', 'anypress'), false, __('Names of the other people or companies, so we can check we have never acted for them.', 'anypress')],
+            ['input_radio', 'court', __('Is There a Court Date or Deadline Coming Up?', 'anypress'), false, [__('Yes', 'anypress'), __('No', 'anypress'), __('Not sure', 'anypress')]],
+            ['input_date', 'court_date', __('When Is It?', 'anypress'), false, 'when:court=' . __('Yes', 'anypress')],
+            ['textarea', 'summary', __('A Few Lines About Your Situation', 'anypress'), true, __('Keep the details for the meeting itself.', 'anypress')],
+            ['input_radio', 'reply', __('How Should We Contact You?', 'anypress'), false, [__('Phone call', 'anypress'), __('Email', 'anypress')]],
             ['terms_and_condition', 'disclaimer', __('Disclaimer', 'anypress'), true, __('I understand that asking for a consultation does not make you my lawyers until we both sign an engagement letter.', 'anypress')],
         ]],
     ];
@@ -157,10 +155,10 @@ function anypress_slot_form_make(string $key, array $form_config): int
     $required = fn (bool $on) => ['required' => ['value' => $on, 'message' => __('This field is required', 'anypress'), 'global' => true]];
     $built = [
         $make('input_name', ['settings' => ['admin_field_label' => __('Name', 'anypress')], 'fields' => [
-            'first_name' => ['settings' => ['label' => __('First name', 'anypress'), 'validation_rules' => $required(true)]],
-            'last_name' => ['settings' => ['visible' => true, 'label' => __('Last name', 'anypress')]],
+            'first_name' => ['attributes' => ['placeholder' => ''], 'settings' => ['label' => __('What Is Your Name?', 'anypress'), 'validation_rules' => $required(true)]],
+            'last_name' => ['settings' => ['visible' => false]],
         ]]),
-        $make('input_email', ['settings' => ['label' => __('Email', 'anypress'), 'validation_rules' => ['required' => ['value' => true]]]]),
+        $make('input_email', ['attributes' => ['placeholder' => ''], 'settings' => ['label' => __('Your Email Address', 'anypress'), 'validation_rules' => ['required' => ['value' => true]]]]),
     ];
     foreach ($fields as [$element, $name, $label, $must, $extra]) {
         $over = ['attributes' => ['name' => $name], 'settings' => ['label' => $label, 'admin_field_label' => $label, 'validation_rules' => $required($must)]];
@@ -221,6 +219,14 @@ function anypress_slot_form_make(string $key, array $form_config): int
             $settings->value = wp_json_encode($value);
             $settings->save();
         }
+        // One question at a time, like a short survey, with a progress bar: Fluent Forms' own conversational form
+        // (free), shown inline by its block. Its colours come from the theme (theme.json styles .ff_conv_app_*).
+        \FluentForm\App\Models\FormMeta::persist($form->id, 'is_conversion_form', 'yes');
+        \FluentForm\App\Models\FormMeta::persist($form->id, 'ffc_form_settings_design', [
+            'background_color' => '', 'question_color' => '', 'answer_color' => '', 'button_color' => '', 'button_text_color' => '',
+            'background_image' => '', 'background_brightness' => 0, 'disable_branding' => 'yes', 'hide_media_on_mobile' => 'no',
+            'key_hint' => 'no', 'enable_scroll_to_top' => 'no',
+        ]);
         // Added to the list as it is now, so nothing another save added since is lost.
         $made = (array) anypress_slot_option('anypress_slot_forms');
         $made[$key] = (int) $form->id;

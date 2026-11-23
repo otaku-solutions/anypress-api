@@ -309,8 +309,10 @@ export function createJobHandlers(
 
   return {
     async run(data: JobData) {
-      if (!data.type.startsWith('tenant.') || !('tenantId' in data)) return runJob(data);
-      return withProgress(pool, data.tenantId, data.type, await progressPlan(data), () => runJob(data));
+      if (!data.type.startsWith('tenant.') || !('tenantId' in data)) await runJob(data);
+      else await withProgress(pool, data.tenantId, data.type, await progressPlan(data), () => runJob(data));
+      // Bookkeeping only: an error here must not fail (and so retry) a job whose work is done.
+      await settleFailures(pool, data).catch((err) => console.error(`Settling earlier failures of ${data.type} failed:`, err));
     },
 
     async maintenance() {
@@ -322,6 +324,7 @@ export function createJobHandlers(
       await purgeExpiredSignIns(pool);
       await maintainDashboardDomains(pool, dashboardHost());
       await stopBuiltVersions(pool, provisioner);
+      await settleStaleFailures(pool);
       if (boss) {
         await pruneOldVersions(pool, boss, templateProductIds);
         await pruneOldBaseSnapshots(pool, boss, templateProductIds);
@@ -667,4 +670,50 @@ export async function stopBuiltVersions(pool: Pool, provisioner: Provisioner) {
   for (const { id } of rows) {
     await provisioner.stopVersion({ versionId: id }).catch((err: unknown) => console.error(`Version ${id}: stop failed: ${(err as Error).message}`));
   }
+}
+
+const SETTLED_BY_SUCCESS = new Set<JobData['type']>(['tenant.create', 'tenant.backup', 'version.create', 'version.delete']);
+
+/**
+ * A job that worked makes good its earlier failures: the same kind of job on the same store or version.
+ * They are dismissed (kept for the record, no longer listed or counted as failed).
+ */
+async function settleFailures(pool: Pool, data: JobData): Promise<void> {
+  // Only jobs whose return means the work was done: others can return early without doing it
+  // (a move skipped for the store's state), and their failures wait for a retry, a dismiss or maintenance.
+  if (!SETTLED_BY_SUCCESS.has(data.type)) return;
+  const tenantId = 'tenantId' in data ? data.tenantId : null;
+  const versionId = 'versionId' in data ? data.versionId : null;
+  if (!tenantId && !versionId) return;
+  // A backup job also returns when its backup is gone or failed earlier: only a backup that is Done counts, and it
+  // makes good only failures from before it was asked for (a newer backup's failure stays, from another queue).
+  let before: Date | null = null;
+  if (data.type === 'tenant.backup') {
+    const { rows } = await pool.query('SELECT status, date_created FROM tenant_backups WHERE id = $1', [data.backupId]);
+    if (rows[0]?.status !== Status.Done) return;
+    before = rows[0].date_created;
+  }
+  await pool.query(
+    `UPDATE job_failures SET status = 'dismissed', dismissed_at = now()
+      WHERE status = 'failed' AND job_type = $1 AND tenant_id IS NOT DISTINCT FROM $2 AND version_id IS NOT DISTINCT FROM $3
+        AND ($4::timestamptz IS NULL OR failed_at < $4)`,
+    [data.type, tenantId, versionId, before],
+  );
+}
+
+/**
+ * Failures nobody needs to act on any more, dismissed: their store or version is gone, a newer backup of
+ * the store worked, or the version they were building is built.
+ */
+async function settleStaleFailures(pool: Pool): Promise<void> {
+  await pool.query(
+    `UPDATE job_failures f SET status = 'dismissed', dismissed_at = now()
+      WHERE f.status = 'failed' AND (
+        (f.tenant_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM tenants t WHERE t.id = f.tenant_id))
+        OR (f.version_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM versions v WHERE v.id = f.version_id))
+        OR (f.job_type = 'tenant.backup' AND EXISTS (
+              SELECT 1 FROM tenant_backups b WHERE b.tenant_id = f.tenant_id AND b.status = $1 AND b.date_created > f.failed_at))
+        OR (f.job_type = 'version.create' AND EXISTS (SELECT 1 FROM versions v WHERE v.id = f.version_id AND v.status = $1)))`,
+    [Status.Done],
+  );
 }

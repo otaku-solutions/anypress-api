@@ -469,10 +469,6 @@
       "source": "github-tag:WordPress/wordpress-playground",
       "places": [
         {
-          "file": ".github/workflows/playground.yml",
-          "match": "VERSION: \\$\\{\\{ inputs\\.version \\|\\| 'v(?<version>[0-9.]+)' \\}\\}"
-        },
-        {
           "file": "playground/Dockerfile",
           "match": "ARG PLAYGROUND=playground-v(?<version>[0-9.]+)"
         }

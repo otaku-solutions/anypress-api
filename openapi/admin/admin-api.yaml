@@ -4301,7 +4301,11 @@ components:
             removing: { type: integer }
             suspended: { type: integer }
         versions: { $ref: '#/components/schemas/StatusCounts' }
-        backups: { $ref: '#/components/schemas/StatusCounts' }
+        backups:
+          description: >-
+            Backups by status. failed counts only open failures: a live store's failed backup with no newer backup of
+            that store that worked. Every failed backup is still listed by GET /admin/backups.
+          allOf: [{ $ref: '#/components/schemas/StatusCounts' }]
         jobs: { $ref: '#/components/schemas/JobCounts' }
         products:
           type: array

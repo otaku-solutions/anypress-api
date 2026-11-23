@@ -370,6 +370,22 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
     return counts;
   };
 
+  /**
+   * Backups by status, where failed counts only the failures someone still needs to look at: a live
+   * store's, with no newer backup of that store that worked. A deleted store's failure, or one a later
+   * night made good, stays on the Backups page but isn't an open problem.
+   */
+  const backupCounts = async (productId: string | null) => {
+    const counts = await byStatus('tenant_backups', productId);
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n FROM tenant_backups b
+        WHERE b.status = $2 AND b.tenant_deleted_at IS NULL AND ($1::uuid IS NULL OR b.product_id = $1)
+          AND NOT EXISTS (SELECT 1 FROM tenant_backups ok WHERE ok.tenant_id = b.tenant_id AND ok.status = $3 AND ok.date_created > b.date_created)`,
+      [productId, Status.Failed, Status.Done],
+    );
+    return { ...counts, failed: rows[0].n };
+  };
+
   app.get('/overview', async (c) => {
     // Counts for one storefront (?productId, or the customer's own); the product list stays whole
     // for the platform admin, so the storefront switcher keeps every choice.
@@ -379,7 +395,7 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
       checkHealth(pool, boss, !!deps.config.dbBackup, !!deps.config.restoreTest, deps.cpuWatch),
       byStatus('tenants', scope),
       byStatus('versions', scope),
-      byStatus('tenant_backups', scope),
+      backupCounts(scope),
       jobCounts(scope),
       pool.query('SELECT count(*)::int AS n FROM tenants WHERE is_suspended AND ($1::uuid IS NULL OR product_id = $1)', [scope]),
       pool.query(

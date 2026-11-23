@@ -3,6 +3,9 @@
  * FluentCommunity: forty members with bios, two space groups with four spaces (one private), a fortnight of posts
  * with a pinned welcome, comments and likes, and a course with three sections and nine lessons that members are
  * part-way through, with their questions on the lessons answered. Each member posts, comments and learns as themselves, through the community's own routes.
+ * With FluentCart on, the course is sold: its FluentCart product (the shop's "Course: ...", or one FluentCommunity's
+ * paywall makes at the course's 'price') is its paywall, so a buyer is enrolled when the order is paid, and FluentCRM's
+ * "Welcome: Course" emails follow.
  */
 $plan = $sample['community'];
 $people = $sample['people'];
@@ -133,6 +136,21 @@ foreach ($courseId ? $course['students'] : [] as [$member, $done]) {
     $api('POST', "/fluent-community/v2/admin/courses/$courseId/students", ['user_id' => $userId]);
     foreach (array_slice($lessons, 0, $done) as $lessonId) {
         $as($userId, static fn () => anypress_sample_api('PUT', "/fluent-community/v2/courses/$courseId/lessons/$lessonId/completion", ['state' => 'completed']));
+    }
+}
+
+// The course for sale, as its Paywall settings do it: a FluentCart product made from the course, then added as its
+// paywall (which writes the product's FluentCommunity integration: enrol in this course when the order is paid).
+// Members enrolled above keep their place.
+if ($courseId && !empty($course['price']) && defined('FLUENTCART_VERSION')) {
+    // The shop's own product for the course when it sells one (the Community demo's "Course: ..."), else a new one.
+    $productId = (int) (\FluentCart\App\Models\Product::where('post_title', 'Course: ' . $course['title'])->where('post_status', 'publish')->value('ID') ?? 0);
+    if (!$productId) {
+        [, $product] = $api('POST', '/fluent-community/v2/cart/products/create', ['title' => $course['title'], 'price' => $course['price']]);
+        $productId = (int) ($product['product']['id'] ?? 0);
+    }
+    if ($productId) {
+        $api('POST', "/fluent-community/v2/cart/spaces/$courseId/paywalls", ['cart_product_id' => $productId]);
     }
 }
 

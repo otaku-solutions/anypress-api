@@ -419,16 +419,22 @@ final class AnyPress_CRM_Lifecycle
     // ---- Contact form (Fluent Forms) -------------------------------------------------------------------------------
 
     /**
-     * The site's contact form: the sender becomes a contact tagged "Enquiry: Interested" (or "Bookings: Interested"
+     * The site's contact form (and the starter pages' forms): the sender becomes a contact tagged "Enquiry: Interested" (or "Bookings: Interested"
      * when they asked for a booking), with the group they picked in the customer_group field. Asking a question isn't a
      * newsletter sign-up: a new contact is "transactional" unless they tick the newsletter box, which sends FluentCRM's
      * confirmation email; once they confirm, the nurture series for their group starts (start_nurture). Fluent Forms'
      * own FluentCRM feed isn't used for this because it subscribes new contacts without asking.
      */
+    /** The contact form, and the starter pages' forms (anypress-starter-forms.php), which ask the same name, email and newsletter questions. */
+    private static function is_enquiry_form(int $id): bool
+    {
+        return $id === (int) get_option('anypress_crm_contact_form') || in_array($id, array_map('intval', (array) get_option('anypress_slot_forms', [])), true);
+    }
+
     public static function on_contact_form($entryId, $formData, $form): void
     {
         self::safely(function () use ($formData, $form) {
-            if (!$form || (int) $form->id !== (int) get_option('anypress_crm_contact_form') || !function_exists('FluentCrmApi')) {
+            if (!$form || !self::is_enquiry_form((int) $form->id) || !function_exists('FluentCrmApi')) {
                 return;
             }
             $email = sanitize_email((string) ($formData['email'] ?? ''));

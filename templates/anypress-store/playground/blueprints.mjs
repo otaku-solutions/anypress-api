@@ -140,6 +140,7 @@ export function blueprint(type, variant = null) {
       file('/wordpress/wp-content/mu-plugins/anypress-store.php', 'mu-plugins/anypress-store.php'),
       file('/wordpress/wp-content/mu-plugins/anypress-patterns.php', 'mu-plugins/anypress-patterns.php'),
       file('/wordpress/wp-content/mu-plugins/anypress-crm-lifecycle.php', 'mu-plugins/anypress-crm-lifecycle.php'),
+      file('/wordpress/wp-content/mu-plugins/anypress-starter-forms.php', 'mu-plugins/anypress-starter-forms.php'),
       // As on a store: a tenant of this site type, so AnyPress Client turns off every plugin the type doesn't list.
       {
         step: 'writeFile',

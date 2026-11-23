@@ -194,6 +194,50 @@ describe.skipIf(!hasPhp)('store agent: mail mu-plugin', () => {
     expect(check('none')).toBe('false');
   });
 
+  it("hands a failed relay email to FluentSMTP's log and alerts, but not one the owner's own service sent", () => {
+    // Stand-ins for FluentSMTP's PHP mail() handler and PHPMailer: the handler records what FluentSMTP would log.
+    const fail = (ownService: string) =>
+      JSON.parse(
+        execFileSync(
+          'php',
+          [
+            '-r',
+            `
+            namespace PHPMailer\\PHPMailer { class Exception extends \\Exception {} class PHPMailer {
+              public $From = 'owner@gmail.example'; public $FromName = 'Ann'; public $Host; public $Port; public $SMTPSecure; public $SMTPAuth; public $Username; public $Password; public $Sender;
+              function isSMTP() {} function getReplyToAddresses() { return ['x' => 1]; } function addReplyTo($a, $n) {} function setFrom($a, $n, $auto) { $this->From = $a; }
+            } }
+            namespace FluentMail\\App\\Services\\Mailer\\Providers\\DefaultMail { class Handler {
+              static $log = []; private $settings; private $mailer;
+              function setSettings($s) { $this->settings = $s; } function setPhpMailer($m) { $this->mailer = $m; }
+              protected function preSend() { return true; }
+              function handleResponse($e) { self::$log[] = ['provider' => $this->settings['provider'], 'sender' => $this->settings['sender_email'], 'error' => $e->get_error_message()]; throw new \\PHPMailer\\PHPMailer\\Exception('failed'); }
+            } }
+            namespace {
+            class WP_Error { function __construct(public $code = '', public $message = '') {} function get_error_message() { return $this->message; } }
+            $hooks = [];
+            function add_action($hook, $fn) { global $hooks; $hooks[$hook][] = $fn; }
+            function get_option($name) { return ['blogname' => 'Ann', 'home' => 'https://shop.example', 'admin_email' => 'owner@shop.example'][$name]; }
+            function wp_specialchars_decode($s) { return $s; }
+            function anypress_own_mail_service($from) { return $from === ${JSON.stringify(ownService)}; }
+            ini_set('error_log', '/dev/null');
+            include ${JSON.stringify(join(root, 'wp-content/mu-plugins/waas-mail.php'))};
+            $phpmailer = new \\PHPMailer\\PHPMailer\\PHPMailer();
+            foreach ($hooks['phpmailer_init'] as $fn) $fn($phpmailer);
+            foreach ($hooks['wp_mail_failed'] as $fn) $fn(new WP_Error('wp_mail_failed', 'SMTP Error: Could not connect to SMTP host.'));
+            // A later failure with no relay send before it (an outreach email) is not the relay's.
+            foreach ($hooks['wp_mail_failed'] as $fn) $fn(new WP_Error('wp_mail_failed', 'Mailbox refused'));
+            echo json_encode(\\FluentMail\\App\\Services\\Mailer\\Providers\\DefaultMail\\Handler::$log);
+            }
+            `,
+          ],
+          { env: { ...process.env, ...withRelay }, encoding: 'utf8' },
+        ),
+      );
+    expect(fail('nobody@example')).toEqual([{ provider: 'AnyPress mail', sender: 'store@mail.example', error: 'SMTP Error: Could not connect to SMTP host.' }]);
+    expect(fail('owner@gmail.example')).toEqual([]);
+  });
+
   it('changes nothing without relay settings (version sites)', () => {
     expect(send({ WAAS_MAIL_B64: '' }, { from: 'a@b.example', fromName: 'x' })).toMatchObject({ mailer: 'mail', From: 'a@b.example', Host: null });
   });

@@ -30,7 +30,7 @@ import Firecrawl from '@mendable/firecrawl-js';
 import { startReferences } from './references.ts';
 import { claimPlatformProspects, startProspectDemos } from './prospectdemos.ts';
 import { loadDomainSalesConfig, startDomainSales, storeAttacher } from './domainsales.ts';
-import { serviceIdStore } from './coolifyids.ts';
+import { serviceIdStore, versionInfoStore } from './coolifyids.ts';
 import { DEFAULT_WEBHOOK_CONFIG, startWebhookWorker, withWebhooks } from './webhooks.ts';
 import { startTemplateReleases } from './templatereleases.ts';
 
@@ -42,7 +42,7 @@ const boss = await startBoss(config.databaseUrl);
 // Coolify for normal stores (docs/coolify.md); the fake for local runs and tests.
 const siteKeys = siteKeyMaster(config.secretsKey);
 const provisioner: Provisioner = config.coolify
-  ? new CoolifyProvisioner({ ...config.coolify, serviceIds: serviceIdStore(pool), siteKey: (storeId) => siteKey(siteKeys, storeId) })
+  ? new CoolifyProvisioner({ ...config.coolify, serviceIds: serviceIdStore(pool), versionInfo: versionInfoStore(pool), siteKey: (storeId) => siteKey(siteKeys, storeId) })
   : new FakeProvisioner();
 const secrets = new Secrets(config.secretsKey);
 const releases = config.releases ? new S3ReleaseStore(config.releases) : undefined;

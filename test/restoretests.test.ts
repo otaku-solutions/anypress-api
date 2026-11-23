@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { checkHealth } from '../src/health.ts';
-import { cleanUpInterruptedTests, loadRestoreTestConfig, RESTORE_TEST_QUEUE, restoreTestStatus, runRestoreTest, startRestoreTests } from '../src/restoretests.ts';
+import { cleanUpInterruptedTests, handOverRestoreTest, loadRestoreTestConfig, RESTORE_TEST_QUEUE, restoreTestStatus, runRestoreTest, startRestoreTests } from '../src/restoretests.ts';
 import { Status } from '../src/status.ts';
 import { setup, waitFor, type TestContext, OWNER } from './helpers.ts';
 
@@ -168,6 +168,30 @@ describe('nightly restore test', () => {
     expect(await tests()).toEqual([]);
     await t.pool.query('UPDATE tenants SET status = $2 WHERE status = $1', [Status.Pending, Status.Done]);
     await waitFor(async () => (await tests()).some((r) => r.status === 'passed'), 20000);
+    await startRestoreTests(t.boss, t.pool, t.provisioner, undefined);
+  }, 30000);
+
+  it('hands a test cut off by a shutdown to the next API process, which tests again', async () => {
+    await t.pool.query('DELETE FROM restore_tests');
+    const tenant = await newTenant('Deployed Mid-Test');
+    await nightlyBackup(tenant);
+    await t.boss.offWork(RESTORE_TEST_QUEUE);
+    // The stopping process: its restore never finishes.
+    let finish!: () => void;
+    const hung = new Promise<void>((resolve) => (finish = resolve));
+    const stopping = Object.create(t.provisioner, { testRestore: { value: async () => (await hung, { name: null, home: '', tables: 0, posts: 0 }) } });
+    const cutOffRun = runRestoreTest(t.pool, stopping);
+    await waitFor(async () => (await tests()).length === 1);
+    const [{ id: cutOff }] = (await t.pool.query('SELECT id FROM restore_tests')).rows;
+    await handOverRestoreTest(t.boss, 0);
+    const deleted: string[] = [];
+    const next = Object.create(t.provisioner, { deleteRestoreTest: { value: async ({ testId }: { testId: string }) => void deleted.push(testId) } });
+    await startRestoreTests(t.boss, t.pool, next, { schedule: '0 11 * * *' }, {}, { pollingIntervalSeconds: 0.5, log: quiet });
+    await waitFor(async () => (await tests()).some((r) => r.status === 'passed'), 20000);
+    expect((await t.pool.query('SELECT status, error FROM restore_tests WHERE id = $1', [cutOff])).rows[0]).toMatchObject({ status: 'failed', error: expect.stringContaining('cut off') });
+    await waitFor(async () => deleted.includes(cutOff));
+    finish();
+    await cutOffRun;
     await startRestoreTests(t.boss, t.pool, t.provisioner, undefined);
   }, 30000);
 

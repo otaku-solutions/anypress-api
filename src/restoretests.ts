@@ -27,6 +27,9 @@ const BACKUP_MAX_AGE_HOURS = 48;
 const STALE_AFTER_HOURS = 50;
 /** A test still "running" after this long was cut off (the API restarted); it counts as failed. */
 const INTERRUPTED_AFTER_HOURS = 3;
+/** A test this API process is running now, so a shutdown can hand it over (handOverRestoreTest). */
+let running: string | undefined;
+const CUT_OFF_ERROR = 'The test was cut off (the API restarted) before it finished';
 /** Finished tests this recent get their test store deleted again, in case the delete at the end of the test failed. */
 const LEFTOVER_DAYS = 7;
 /** No test started this long: queue one on startup (first deploy, or the API was down at night). */
@@ -65,9 +68,9 @@ export interface RestoreTestOutcome {
  */
 export async function cleanUpInterruptedTests(pool: Pool, provisioner: Provisioner): Promise<number> {
   const { rows } = await pool.query<{ id: string }>(
-    `UPDATE restore_tests SET status = 'failed', error = 'The test was cut off (the API restarted) before it finished', finished_at = now()
+    `UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now()
       WHERE status = 'running' AND started_at < now() - make_interval(hours => $1) RETURNING id`,
-    [INTERRUPTED_AFTER_HOURS],
+    [INTERRUPTED_AFTER_HOURS, CUT_OFF_ERROR],
   );
   const { rows: finished } = await pool.query<{ id: string }>(
     "SELECT id FROM restore_tests WHERE status <> 'running' AND started_at > now() - make_interval(days => $1)",
@@ -107,6 +110,7 @@ export async function runRestoreTest(
   ]);
   const id = started[0]!.id;
   const outcome: RestoreTestOutcome = { id, tenantId: pick.tenant_id, backupId: pick.backup_id, status: 'passed' };
+  running = id;
   try {
     const found = await provisioner.testRestore({
       testId: id,
@@ -130,8 +134,20 @@ export async function runRestoreTest(
         }
       }
     }
+  } finally {
+    if (running === id) running = undefined;
   }
   return outcome;
+}
+
+/**
+ * On shutdown: hands a test this process is still running to the next API process. A deploy stops the old
+ * container a minute after the new one starts, often mid-test, and nothing else would test again until the
+ * next night. The new process marks the test cut off and runs a fresh one (a minute later, so the old
+ * process, already busy, never takes it).
+ */
+export async function handOverRestoreTest(boss: PgBoss, startAfterSeconds = 60): Promise<void> {
+  if (running) await boss.send(RESTORE_TEST_QUEUE, { cutOff: running }, { startAfter: startAfterSeconds });
 }
 
 export interface RestoreTestStatus {
@@ -209,16 +225,23 @@ export async function startRestoreTests(
   if (!(await boss.getQueue(RESTORE_TEST_QUEUE))) await boss.createQueue(RESTORE_TEST_QUEUE, { retryLimit: 0, expireInSeconds: 3 * 3600, deleteAfterSeconds: 7 * 24 * 3600 });
   await boss.schedule(RESTORE_TEST_QUEUE, config.schedule);
 
-  await boss.work<{ busyRetry?: number }>(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async ([job]) => {
+  await boss.work<{ busyRetry?: number; cutOff?: string }>(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async ([job]) => {
     try {
       const cleaned = await cleanUpInterruptedTests(pool, provisioner);
       if (cleaned) log.log(`restore test: cleaned up ${cleaned} interrupted`);
     } catch (err) {
       log.error(`restore test: cleanup failed: ${(err as Error).message}`);
     }
+    // Handed over by a stopping API process; its test store is deleted after the fresh test.
+    const cutOff = job?.data?.cutOff;
+    if (cutOff) {
+      await pool.query("UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now() WHERE id = $1 AND status = 'running'", [cutOff, CUT_OFF_ERROR]);
+      log.log(`restore test ${cutOff}: cut off by a restart; testing again`);
+    }
     // Busy before or after the pick: a move that finishes between the two still gets its retry.
     const busyBefore = await storesBusy(pool);
     const outcome = await runRestoreTest(pool, provisioner, alerts);
+    if (cutOff) await provisioner.deleteRestoreTest({ testId: cutOff }).catch((err: unknown) => log.error(`restore test ${cutOff}: test store not deleted: ${(err as Error).message}`));
     const busyRetry = job?.data?.busyRetry ?? 0;
     if (!outcome && (busyBefore || (await storesBusy(pool)))) {
       if (busyRetry < BUSY_RETRIES) {

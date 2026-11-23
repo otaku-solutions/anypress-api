@@ -109,6 +109,14 @@ if ($spec && isset($spec['keep'])) {
             [1, 'I found you on Google.', [1, 2], 'More evening times would help.', 'Definitely'],
             [0, 'I needed help fast.', [4, 0], 'A reminder the day before.', 'Probably'],
             [count($services) - 1, 'Your blog posts.', [2, 4], 'Send the notes after.', 'Definitely'],
+            [1, 'I walked past and saw the sign.', [0, 1, 3], 'Nothing to add.', 'Definitely'],
+            [0, 'A friend recommended you.', [0, 4], 'Parking was hard to find.', 'Definitely'],
+            [2 % count($services), 'Instagram.', [3], 'Booking a second visit was fiddly on my phone.', 'Probably'],
+            [0, 'I found you on Google.', [2, 3], 'Prices on the website would help.', 'Definitely'],
+            [1, 'My partner booked it for me.', [0, 1], 'Nothing, thank you.', 'Definitely'],
+            [0, 'Your newsletter.', [4, 2, 0], 'A little more time at the end.', 'Definitely'],
+            [count($services) - 1, 'A friend recommended you.', [0, 3], 'Nothing to add.', 'Probably'],
+            [1, 'I found you on Google.', [1, 4], 'The waiting area was cold.', 'Definitely'],
         ];
         $checks = ['Friendly people', 'On time', 'Clear prices', 'Easy to book', 'Good advice'];
         foreach ($answers as $i => [$service, $why, $mattered, $better, $again]) {

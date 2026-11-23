@@ -4,6 +4,9 @@
  * its numbers (data.php's 'tables'), made with the plugins' own importer, column settings and chart model, as their
  * admin screens save them. Each chart reads its rows from its own Ninja table, so editing the table moves the chart.
  * pages.php puts each one on the page it names ($sample['made']['tables']).
+ *
+ * A survey form (forms.php) also gets charts of its answers, read straight from its Fluent Forms entries (Ninja
+ * Charts' Fluent Forms source): each new entry moves the chart. They stay in wp-admin, as survey results do.
  */
 
 use NinjaCharts\App\Models\NinjaCharts;
@@ -76,3 +79,43 @@ foreach ($sample['tables'] as $n => $table) {
     $made[] = ['page' => $table['page'], 'title' => $table['title'], 'text' => $table['text'], 'table' => $id, 'chart' => $chart];
 }
 $sample['made']['tables'] = $made;
+
+// The survey's answers as charts: how many picked each choice. Ninja Charts counts a choice field's entries itself.
+$survey = ($sample['form']['template'] ?? '') === 'client_satisfaction_survey_form' && defined('FLUENTFORM')
+    ? \FluentForm\App\Models\Form::where('title', $sample['form']['title'])->first()
+    : null;
+if ($survey) {
+    $palette = array_column(wp_get_global_settings(['color', 'palette', 'theme']) ?: [], 'color', 'slug');
+    $colours = array_values(array_filter([$palette['primary'] ?? null, $palette['primary-alt'] ?? null, $palette['secondary'] ?? null, $palette['primary-accent'] ?? null])) ?: ['#2747b8', '#f0b93a', '#4b505c', '#e3e9fb'];
+    $fields = [];
+    foreach (json_decode($survey->form_fields, true)['fields'] ?? [] as $field) {
+        $fields[$field['attributes']['name'] ?? ''] = $field['settings']['label'] ?? '';
+    }
+    foreach ([['checkbox', 'checkbox', 'horizontalBar'], ['input_radio', 'radio', 'doughnut']] as [$key, $type, $chart]) {
+        if (empty($fields[$key])) {
+            continue;
+        }
+        $round = $chart === 'doughnut';
+        NinjaCharts::store(ninjaChartsSanitizeArray([
+            'chart_name' => $survey->title . ': ' . $fields[$key],
+            'render_engine' => 'chart_js',
+            'chart_type' => $chart,
+            'data_source' => 'fluent_form',
+            'table_id' => (int) $survey->id,
+            'final_keys' => [['key' => $key, 'label' => $fields[$key], 'data_type' => $type]],
+            // Every entry ('0'), so new answers count too.
+            'row' => ['number' => '0', 'date_range' => '', 'pick_range' => 'false', 'pick_date' => 'false', 'order' => 'ASC'],
+            'options' => [
+                'chart' => ['width' => '600', 'responsive' => 'true', 'height' => '400', 'position' => 'center', 'backgroundColor' => '#ffffff', 'borderWidth' => '0', 'borderColor' => '#000000', 'borderRadius' => '0', 'fontSize' => '12', 'fontStyle' => 'normal', 'fontColor' => '#000000', 'fill' => 'origin'],
+                'animation' => 'linear',
+                'series' => [['label' => $fields[$key], 'color' => $colours[0], 'lineWidth' => '2']],
+                'axes' => ['display' => $round ? 'false' : 'true', 'stacked' => 'false', 'x_axis_label' => ' ', 'y_axis_label' => ' ', 'vertical_min_tick' => '0', 'vertical_max_tick' => ''],
+                'title' => ['display' => 'true', 'position' => 'top', 'fontStyle' => 'normal', 'fontColor' => '#000000', 'fontSize' => '16'],
+                'tooltip' => ['enabled' => 'true', 'mode' => 'false', 'backgroundColor' => '#ffffff', 'titleFontSize' => '12', 'titleFontColor' => '#000000', 'bodyFontColor' => '#000000', 'bodyFontSize' => '12', 'displayColors' => 'true', 'borderColor' => '#cccccc', 'borderWidth' => '1'],
+                'legend' => ['display' => $round ? 'true' : 'false', 'position' => 'right', 'fontColor' => '#000000'],
+                'layout' => ['padding' => ['left' => '0', 'right' => '0', 'top' => '0', 'bottom' => '0']],
+            ],
+            'datasets' => wp_json_encode([['label' => $fields[$key], 'backgroundColor' => $round ? $colours : $colours[0], 'borderColor' => $round ? '#ffffff' : $colours[0], 'borderWidth' => 1]]),
+        ]));
+    }
+}

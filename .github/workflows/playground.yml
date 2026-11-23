@@ -21,10 +21,14 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    env:
-      VERSION: ${{ inputs.version || 'v3.1.64' }}
     steps:
       - uses: actions/checkout@v7
+      # The version lives in playground/Dockerfile only, so Update pins never has to edit a workflow file
+      # (its token may not change workflows).
+      - name: Pick the Playground version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^ARG PLAYGROUND=playground-//p' playground/Dockerfile)}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           repository: WordPress/wordpress-playground

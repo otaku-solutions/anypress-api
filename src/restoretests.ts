@@ -33,6 +33,12 @@ const LEFTOVER_DAYS = 7;
 const DUE_AFTER_HOURS = 26;
 /** The last test failed and started this long ago: queue one on startup, so a deployed fix is checked the same day. */
 const RETRY_FAILED_AFTER_HOURS = 2;
+/**
+ * No store could be tested because stores were busy (the nightly store moves, also at 11:00 UTC, set them
+ * Pending): try again this long after, up to BUSY_RETRIES times.
+ */
+const BUSY_RETRY_SECONDS = 30 * 60;
+const BUSY_RETRIES = 8;
 
 /** On unless RESTORE_TEST=off. Nightly at 11:00 UTC, two hours after the store backups. */
 export function loadRestoreTestConfig(env: NodeJS.ProcessEnv): RestoreTestConfig | undefined {
@@ -151,6 +157,12 @@ export async function restoreTestStatus(pool: Pool, enabled: boolean): Promise<R
   return { ok: row.status !== 'failed' && (row.status === 'running' || !row.stale), status: row.status, lastPassedAt };
 }
 
+/** True when a live store is busy (Pending, e.g. moving to a new version) and so can't be tested now. */
+async function storesBusy(pool: Pool): Promise<boolean> {
+  const { rows } = await pool.query('SELECT EXISTS (SELECT 1 FROM tenants WHERE status = $1 AND NOT is_suspended) AS busy', [Status.Pending]);
+  return rows[0].busy;
+}
+
 /** The newest test, for the startup log line and the catch-up decision. */
 async function lastRestoreTest(pool: Pool): Promise<{ id: string; status: string; error: string | null; started_at: Date } | undefined> {
   const { rows } = await pool.query('SELECT id, status, error, started_at FROM restore_tests ORDER BY started_at DESC LIMIT 1');
@@ -183,7 +195,11 @@ export async function startRestoreTests(
   provisioner: Provisioner,
   config: RestoreTestConfig | undefined,
   alerts: RestoreTestAlerts = {},
-  { pollingIntervalSeconds = 60, log = console }: { pollingIntervalSeconds?: number; log?: Pick<Console, 'log' | 'error'> } = {},
+  {
+    pollingIntervalSeconds = 60,
+    busyRetrySeconds = BUSY_RETRY_SECONDS,
+    log = console,
+  }: { pollingIntervalSeconds?: number; busyRetrySeconds?: number; log?: Pick<Console, 'log' | 'error'> } = {},
 ): Promise<void> {
   if (!config) {
     if (await boss.getQueue(RESTORE_TEST_QUEUE)) await boss.unschedule(RESTORE_TEST_QUEUE);
@@ -193,7 +209,7 @@ export async function startRestoreTests(
   if (!(await boss.getQueue(RESTORE_TEST_QUEUE))) await boss.createQueue(RESTORE_TEST_QUEUE, { retryLimit: 0, expireInSeconds: 3 * 3600, deleteAfterSeconds: 7 * 24 * 3600 });
   await boss.schedule(RESTORE_TEST_QUEUE, config.schedule);
 
-  await boss.work(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async () => {
+  await boss.work<{ busyRetry?: number }>(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async ([job]) => {
     try {
       const cleaned = await cleanUpInterruptedTests(pool, provisioner);
       if (cleaned) log.log(`restore test: cleaned up ${cleaned} interrupted`);
@@ -201,7 +217,11 @@ export async function startRestoreTests(
       log.error(`restore test: cleanup failed: ${(err as Error).message}`);
     }
     const outcome = await runRestoreTest(pool, provisioner, alerts);
-    if (!outcome) log.log('restore test: no store has a recent nightly backup');
+    const busyRetry = job?.data?.busyRetry ?? 0;
+    if (!outcome && busyRetry < BUSY_RETRIES && (await storesBusy(pool))) {
+      log.log(`restore test: stores are busy (moving to a new version?); trying again in ${busyRetrySeconds} seconds`);
+      await boss.send(RESTORE_TEST_QUEUE, { busyRetry: busyRetry + 1 }, { startAfter: busyRetrySeconds });
+    } else if (!outcome) log.log('restore test: no store has a recent nightly backup');
     else if (outcome.status === 'passed') log.log(`restore test ${outcome.id}: passed (store ${outcome.tenantId}, backup ${outcome.backupId})`);
     else log.error(`restore test ${outcome.id}: failed (store ${outcome.tenantId}, backup ${outcome.backupId}): ${outcome.error}`);
   });

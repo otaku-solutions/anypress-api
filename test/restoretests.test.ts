@@ -154,6 +154,23 @@ describe('nightly restore test', () => {
     expect((await t.boss.getSchedules()).map((s) => s.name)).not.toContain(RESTORE_TEST_QUEUE);
   }, 30000);
 
+  it('tries again later when every store is busy moving at test time', async () => {
+    await t.pool.query('DELETE FROM restore_tests');
+    const tenant = await newTenant('Moving Tonight');
+    await nightlyBackup(tenant);
+    await t.pool.query('UPDATE tenants SET status = $2 WHERE status = $1', [Status.Done, Status.Pending]);
+    const logs: string[] = [];
+    // Only this test's worker, with its one-second wait.
+    await t.boss.offWork(RESTORE_TEST_QUEUE);
+    await startRestoreTests(t.boss, t.pool, t.provisioner, { schedule: '0 11 * * *' }, {}, { pollingIntervalSeconds: 0.5, busyRetrySeconds: 1, log: { log: (m: string) => void logs.push(m), error: () => {} } });
+    await t.boss.send(RESTORE_TEST_QUEUE, {});
+    await waitFor(async () => logs.some((m) => m.includes('stores are busy')), 20000);
+    expect(await tests()).toEqual([]);
+    await t.pool.query('UPDATE tenants SET status = $2 WHERE status = $1', [Status.Pending, Status.Done]);
+    await waitFor(async () => (await tests()).some((r) => r.status === 'passed'), 20000);
+    await startRestoreTests(t.boss, t.pool, t.provisioner, undefined);
+  }, 30000);
+
   it('logs the last failure on start and tests again when it failed over two hours ago', async () => {
     await t.pool.query('DELETE FROM restore_tests');
     const tenant = await newTenant('Failed Last Night');

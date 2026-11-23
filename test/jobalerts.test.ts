@@ -15,6 +15,11 @@ beforeAll(async () => {
   await waitFor(async () => ((await (await t.call('GET', `/v1/versions?versionId=${versionId}`)).json()) as any[])[0]?.statusCode === Status.Done);
   await t.call('PUT', '/v1/versions/production', { body: { versionId } });
   tenantId = ((await (await t.call('POST', '/v1/tenants', { body: { ...OWNER, name: 'Acme' } })).json()) as { id: string }).id;
+  // The build job finished before the failures below are recorded: a build that works afterwards dismisses them.
+  await waitFor(
+    async () =>
+      (await t.pool.query("SELECT 1 FROM pgboss.job WHERE data->>'type' = 'tenant.create' AND data->>'tenantId' = $1 AND state = 'completed'", [tenantId])).rowCount === 1,
+  );
   await t.pool.query('UPDATE tenant_domains SET is_main = false WHERE tenant_id = $1', [tenantId]);
   await t.pool.query("INSERT INTO tenant_domains (tenant_id, domain_name, is_main) VALUES ($1, 'acme.anypress.site', true)", [tenantId]);
 }, 60_000);

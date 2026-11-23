@@ -241,7 +241,9 @@ export async function startRestoreTests(
     // Handed over by a stopping API process; its test store is deleted after the fresh test.
     const cutOff = job?.data?.cutOff;
     if (cutOff) {
-      await pool.query("UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now() WHERE id = $1 AND status = 'running'", [cutOff, CUT_OFF_ERROR]);
+      const { rowCount } = await pool.query("UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now() WHERE id = $1 AND status = 'running'", [cutOff, CUT_OFF_ERROR]);
+      // It finished after all, or another hand-over of the same test already tested again.
+      if (!rowCount) return;
       log.log(`restore test ${cutOff}: cut off by a restart; testing again`);
     }
     // Busy before or after the pick: a move that finishes between the two still gets its retry.

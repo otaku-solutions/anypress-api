@@ -196,7 +196,7 @@ describe.skipIf(!hasPhp)('store agent: mail mu-plugin', () => {
 
   it("hands a failed relay email to FluentSMTP's log and alerts, but not one the owner's own service sent", () => {
     // Stand-ins for FluentSMTP's PHP mail() handler and PHPMailer: the handler records what FluentSMTP would log.
-    const fail = (ownService: string) =>
+    const fail = (ownService: string, fluentSmtpConnection = false) =>
       JSON.parse(
         execFileSync(
           'php',
@@ -220,6 +220,7 @@ describe.skipIf(!hasPhp)('store agent: mail mu-plugin', () => {
             function get_option($name) { return ['blogname' => 'Ann', 'home' => 'https://shop.example', 'admin_email' => 'owner@shop.example'][$name]; }
             function wp_specialchars_decode($s) { return $s; }
             function anypress_own_mail_service($from) { return $from === ${JSON.stringify(ownService)}; }
+            ${fluentSmtpConnection ? 'function fluentMailGetProvider($from) { return new \\FluentMail\\App\\Services\\Mailer\\Providers\\DefaultMail\\Handler(); }' : ''}
             ini_set('error_log', '/dev/null');
             include ${JSON.stringify(join(root, 'wp-content/mu-plugins/waas-mail.php'))};
             $phpmailer = new \\PHPMailer\\PHPMailer\\PHPMailer();
@@ -236,6 +237,8 @@ describe.skipIf(!hasPhp)('store agent: mail mu-plugin', () => {
       );
     expect(fail('nobody@example')).toEqual([{ provider: 'AnyPress mail', sender: 'store@mail.example', error: 'SMTP Error: Could not connect to SMTP host.' }]);
     expect(fail('owner@gmail.example')).toEqual([]);
+    // The owner chose FluentSMTP's PHP mail() connection: FluentSMTP logs and reports the failure itself, once.
+    expect(fail('nobody@example', true)).toEqual([]);
   });
 
   it('changes nothing without relay settings (version sites)', () => {

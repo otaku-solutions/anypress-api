@@ -787,7 +787,6 @@ add_action('phpmailer_init', function ($mailer) use ($waas_mail) {
         $GLOBALS['waas_mail_own_service'] = true;
         return;
     }
-    $GLOBALS['waas_mail_relay'] = true;
     $mailer->isSMTP();
     $mailer->Host = $waas_mail['host'];
     $mailer->Port = (int) ($waas_mail['port'] ?? 465);
@@ -807,6 +806,9 @@ add_action('phpmailer_init', function ($mailer) use ($waas_mail) {
     if (!$mailer->getReplyToAddresses() && filter_var($admin, FILTER_VALIDATE_EMAIL) && $admin !== strtolower($waas_mail['from'])) $mailer->addReplyTo($admin, $name);
     $mailer->setFrom($waas_mail['from'], $name, false);
     $mailer->Sender = $waas_mail['from'];
+    // FluentSMTP picks a connection by this From next. With one (its PHP mail() connection, say) it logs and reports a
+    // failure itself; with none, waas_mail_report_failure() below does.
+    $GLOBALS['waas_mail_relay'] = !waas_mail_fluentsmtp_routes((string) $mailer->From);
 }, PHP_INT_MAX);
 add_action('wp_mail_succeeded', function () {
     $GLOBALS['waas_mail_relay'] = false;
@@ -819,12 +821,23 @@ add_action('wp_mail_failed', function ($error) {
 });
 
 /*
- * FluentSMTP logs and reports only what its own connections send, and a store's email goes through the relay instead
- * (FluentSMTP has no connection of its own until the owner adds one). So an email the relay turned down is handed to
+ * FluentSMTP logs and reports only what its own connections send, and a store's email goes through the relay with no
+ * FluentSMTP connection (until the owner adds one). So an email the relay turned down is handed to
  * FluentSMTP the way its own PHP mail() connection hands it a failure: a failed row in its Email Logs, where the owner
  * can see why and resend it; the fallback connection, if the owner set one; and the failure alerts the owner turned on
  * in its Notification Settings (Slack, Discord, Telegram or Pushover), at most one a minute.
  */
+/** Whether FluentSMTP sends an email from this address through one of its connections, any kind. */
+function waas_mail_fluentsmtp_routes(string $from): bool
+{
+    if (!function_exists('fluentMailGetProvider')) return false;
+    try {
+        return is_object(fluentMailGetProvider($from));
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+
 function waas_mail_report_failure($error): void
 {
     global $phpmailer;

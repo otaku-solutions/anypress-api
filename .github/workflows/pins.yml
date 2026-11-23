@@ -79,8 +79,8 @@ jobs:
           else
             gh pr create --head "$BRANCH" --title "Move pins to the newest releases" --body-file body.md
           fi
-          # A pull request opened with the workflow's token starts no CI by itself; a workflow_dispatch run does, and its
-          # checks count for the branch's newest commit.
+          # A pull request opened with the workflow's token may start no CI that runs by itself; a workflow_dispatch run
+          # does, and its checks count for the branch's newest commit.
           sha=$(git rev-parse HEAD)
           for workflow in $CI_WORKFLOW; do
             gh workflow run "$workflow" --ref "$BRANCH"
@@ -95,6 +95,18 @@ jobs:
             [ -n "$run" ] || { echo "::error::$workflow did not start on $BRANCH"; exit 1; }
             if ! gh run watch "$run" --exit-status --interval 30 >/dev/null; then
               echo "::error::$workflow failed on the pin update: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"
+              exit 1
+            fi
+          done
+          # Where the repository runs pull_request workflows for the bot's pull request, GitHub holds them for a
+          # maintainer's approval (the bot counts as a first-time contributor) and their required checks block the merge.
+          # Approve them and wait for them as well.
+          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&status=action_required" -q '.workflow_runs[].id'); do
+            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run/approve" >/dev/null
+          done
+          for run in $(gh run list --branch "$BRANCH" --event pull_request --commit "$sha" --json databaseId -q '.[].databaseId'); do
+            if ! gh run watch "$run" --exit-status --interval 30 >/dev/null; then
+              echo "::error::A pull request check failed on the pin update: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"
               exit 1
             fi
           done

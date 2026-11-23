@@ -184,6 +184,32 @@ async function storesBusy(pool: Pool): Promise<boolean> {
   return rows[0].busy;
 }
 
+type Log = Pick<Console, 'log' | 'error'>;
+
+async function cleanUp(pool: Pool, provisioner: Provisioner, log: Log): Promise<void> {
+  try {
+    const cleaned = await cleanUpInterruptedTests(pool, provisioner);
+    if (cleaned) log.log(`restore test: cleaned up ${cleaned} interrupted`);
+  } catch (err) {
+    log.error(`restore test: cleanup failed: ${(err as Error).message}`);
+  }
+}
+
+/**
+ * A test handed over by a stopping API process: marks it cut off. False when it finished after all, or
+ * another hand-over of the same test already tested again; then there is nothing to do.
+ */
+async function takeOver(pool: Pool, testId: string, log: Log): Promise<boolean> {
+  const { rowCount } = await pool.query("UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now() WHERE id = $1 AND status = 'running'", [testId, CUT_OFF_ERROR]);
+  if (rowCount) log.log(`restore test ${testId}: cut off by a restart; testing again`);
+  return !!rowCount;
+}
+
+function logOutcome(log: Log, outcome: RestoreTestOutcome): void {
+  if (outcome.status === 'passed') log.log(`restore test ${outcome.id}: passed (store ${outcome.tenantId}, backup ${outcome.backupId})`);
+  else log.error(`restore test ${outcome.id}: failed (store ${outcome.tenantId}, backup ${outcome.backupId}): ${outcome.error}`);
+}
+
 /** The newest test, for the startup log line and the catch-up decision. */
 async function lastRestoreTest(pool: Pool): Promise<{ id: string; status: string; error: string | null; started_at: Date } | undefined> {
   const { rows } = await pool.query('SELECT id, status, error, started_at FROM restore_tests ORDER BY started_at DESC LIMIT 1');
@@ -221,7 +247,7 @@ export async function startRestoreTests(
     busyRetrySeconds = BUSY_RETRY_SECONDS,
     handOverSeconds = 60,
     log = console,
-  }: { pollingIntervalSeconds?: number; busyRetrySeconds?: number; handOverSeconds?: number; log?: Pick<Console, 'log' | 'error'> } = {},
+  }: { pollingIntervalSeconds?: number; busyRetrySeconds?: number; handOverSeconds?: number; log?: Log } = {},
 ): Promise<void> {
   if (!config) {
     if (await boss.getQueue(RESTORE_TEST_QUEUE)) await boss.unschedule(RESTORE_TEST_QUEUE);
@@ -232,33 +258,19 @@ export async function startRestoreTests(
   await boss.schedule(RESTORE_TEST_QUEUE, config.schedule);
 
   await boss.work<{ busyRetry?: number; cutOff?: string }>(RESTORE_TEST_QUEUE, { pollingIntervalSeconds }, async ([job]) => {
-    try {
-      const cleaned = await cleanUpInterruptedTests(pool, provisioner);
-      if (cleaned) log.log(`restore test: cleaned up ${cleaned} interrupted`);
-    } catch (err) {
-      log.error(`restore test: cleanup failed: ${(err as Error).message}`);
-    }
-    // Handed over by a stopping API process; its test store is deleted after the fresh test.
+    await cleanUp(pool, provisioner, log);
     const cutOff = job?.data?.cutOff;
-    if (cutOff) {
-      const { rowCount } = await pool.query("UPDATE restore_tests SET status = 'failed', error = $2, finished_at = now() WHERE id = $1 AND status = 'running'", [cutOff, CUT_OFF_ERROR]);
-      // It finished after all, or another hand-over of the same test already tested again.
-      if (!rowCount) return;
-      log.log(`restore test ${cutOff}: cut off by a restart; testing again`);
-    }
+    if (cutOff && !(await takeOver(pool, cutOff, log))) return;
     // Busy before or after the pick: a move that finishes between the two still gets its retry.
     const busyBefore = await storesBusy(pool);
     const outcome = await runRestoreTest(pool, provisioner, alerts);
     if (cutOff) await provisioner.deleteRestoreTest({ testId: cutOff }).catch((err: unknown) => log.error(`restore test ${cutOff}: test store not deleted: ${(err as Error).message}`));
+    if (outcome) return logOutcome(log, outcome);
+    if (!busyBefore && !(await storesBusy(pool))) return log.log('restore test: no store has a recent nightly backup');
     const busyRetry = job?.data?.busyRetry ?? 0;
-    if (!outcome && (busyBefore || (await storesBusy(pool)))) {
-      if (busyRetry < BUSY_RETRIES) {
-        log.log(`restore test: stores are busy (moving to a new version?); trying again in ${busyRetrySeconds} seconds`);
-        await boss.send(RESTORE_TEST_QUEUE, { busyRetry: busyRetry + 1 }, { startAfter: busyRetrySeconds });
-      } else log.error(`restore test: stores still busy after ${BUSY_RETRIES} tries; left for the next night`);
-    } else if (!outcome) log.log('restore test: no store has a recent nightly backup');
-    else if (outcome.status === 'passed') log.log(`restore test ${outcome.id}: passed (store ${outcome.tenantId}, backup ${outcome.backupId})`);
-    else log.error(`restore test ${outcome.id}: failed (store ${outcome.tenantId}, backup ${outcome.backupId}): ${outcome.error}`);
+    if (busyRetry >= BUSY_RETRIES) return log.error(`restore test: stores still busy after ${BUSY_RETRIES} tries; left for the next night`);
+    log.log(`restore test: stores are busy (moving to a new version?); trying again in ${busyRetrySeconds} seconds`);
+    await boss.send(RESTORE_TEST_QUEUE, { busyRetry: busyRetry + 1 }, { startAfter: busyRetrySeconds });
   });
 
   // The API's log is the one place the reason shows without database access, and it starts over on each deploy.

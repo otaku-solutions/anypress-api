@@ -154,9 +154,10 @@ function anypress_slot_form_make(string $key, array $form_config): int
     };
     $required = fn (bool $on) => ['required' => ['value' => $on, 'message' => __('This field is required', 'anypress'), 'global' => true]];
     $built = [
-        $make('input_name', ['settings' => ['admin_field_label' => __('Name', 'anypress')], 'fields' => [
-            'first_name' => ['attributes' => ['placeholder' => ''], 'settings' => ['label' => __('What Is Your Name?', 'anypress'), 'validation_rules' => $required(true)]],
-            'last_name' => ['settings' => ['visible' => false]],
+        // First name and last name stay separate, so the CRM gets both (anypress-crm-lifecycle.php).
+        $make('input_name', ['settings' => ['label' => __('What Is Your Name?', 'anypress'), 'admin_field_label' => __('Name', 'anypress')], 'fields' => [
+            'first_name' => ['attributes' => ['placeholder' => ''], 'settings' => ['label' => __('First Name', 'anypress'), 'validation_rules' => $required(true)]],
+            'last_name' => ['attributes' => ['placeholder' => ''], 'settings' => ['visible' => true, 'label' => __('Last Name', 'anypress')]],
         ]]),
         $make('input_email', ['attributes' => ['placeholder' => ''], 'settings' => ['label' => __('Your Email Address', 'anypress'), 'validation_rules' => ['required' => ['value' => true]]]]),
     ];

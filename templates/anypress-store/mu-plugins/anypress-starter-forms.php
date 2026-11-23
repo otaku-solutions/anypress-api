@@ -103,7 +103,29 @@ function anypress_slot_form(string $key): int
     if (!empty($made[$key]) && \FluentForm\App\Models\Form::find((int) $made[$key])) {
         return (int) $made[$key];
     }
-    [$title, $button, $thanks, $fields] = $forms[$key];
+    // One save at a time makes forms, so two saves never both make one or drop each other's from the list. WordPress's
+    // own lock (an atomic row in wp_options, freed after 30 seconds if a save dies); a save that can't get it leaves
+    // the spot waiting for the next save.
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    if (!\WP_Upgrader::create_lock('anypress_slot_forms', 30)) {
+        return 0;
+    }
+    try {
+        return anypress_slot_form_make($key, $forms[$key]);
+    } finally {
+        \WP_Upgrader::release_lock('anypress_slot_forms');
+    }
+}
+
+/** Makes the form for a spot and adds it to the list; called only while holding the lock. 0 if anything fails. */
+function anypress_slot_form_make(string $key, array $form_config): int
+{
+    wp_cache_delete('anypress_slot_forms', 'options');
+    $made = (array) get_option('anypress_slot_forms', []);
+    if (!empty($made[$key]) && \FluentForm\App\Models\Form::find((int) $made[$key])) {
+        return (int) $made[$key];
+    }
+    [$title, $button, $thanks, $fields] = $form_config;
     $defaults = fluentformLoadFile('Services/FormBuilder/DefaultElements.php');
     $n = 0;
     $choices = fn (array $list) => array_map(fn ($o, $i) => ['label' => $o, 'value' => $o, 'calc_value' => '', 'image' => '', 'id' => $i], $list, array_keys($list));
@@ -185,7 +207,10 @@ function anypress_slot_form(string $key): int
             $settings->save();
         }
         $made[$key] = (int) $form->id;
-        update_option('anypress_slot_forms', $made, false);
+        // Its entries count as enquiries only once it is on the list (anypress-crm-lifecycle.php).
+        if (!update_option('anypress_slot_forms', $made, false)) {
+            throw new \RuntimeException('could not save the form list');
+        }
     } catch (\Throwable $e) {
         if ($form && !empty($form->id)) {
             try {

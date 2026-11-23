@@ -43,9 +43,12 @@ describe('failed tasks close themselves once fixed', () => {
 
   it('maintenance dismisses failures whose store or version is gone, or that a newer backup made good', async () => {
     const handlers = createJobHandlers(t.pool, t.provisioner, t.deps.secrets, 90);
-    const done = async () => (await t.pool.query('SELECT 1 FROM tenant_backups WHERE tenant_id = $1 AND status = $2', [tenant.id, Status.Done])).rowCount ?? 0;
+    // Wait for the whole job, not just its backup: the job settles its own failures after the backup is Done.
+    const finished = async () =>
+      (await t.pool.query("SELECT 1 FROM pgboss.job WHERE data->>'type' = 'tenant.backup' AND data->>'tenantId' = $1 AND state = 'completed'", [tenant.id])).rowCount ?? 0;
+    const before = await finished();
     await t.call('POST', `/v1/tenants/backups?externalId=${tenant.externalId}`);
-    await waitFor(async () => (await done()) > 0);
+    await waitFor(async () => (await finished()) > before);
     const goneStore = await failure('tenant.backup', crypto.randomUUID());
     const goneVersion = await failure('version.delete', null, crypto.randomUUID());
     // Older than the backup just taken, which worked.

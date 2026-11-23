@@ -685,6 +685,11 @@ async function settleFailures(pool: Pool, data: JobData): Promise<void> {
   const tenantId = 'tenantId' in data ? data.tenantId : null;
   const versionId = 'versionId' in data ? data.versionId : null;
   if (!tenantId && !versionId) return;
+  // A backup job also returns when its backup is gone or failed earlier: only a backup that is Done counts.
+  if (data.type === 'tenant.backup') {
+    const { rows } = await pool.query('SELECT status FROM tenant_backups WHERE id = $1', [data.backupId]);
+    if (rows[0]?.status !== Status.Done) return;
+  }
   await pool.query(
     `UPDATE job_failures SET status = 'dismissed', dismissed_at = now()
       WHERE status = 'failed' AND job_type = $1 AND tenant_id IS NOT DISTINCT FROM $2 AND version_id IS NOT DISTINCT FROM $3`,

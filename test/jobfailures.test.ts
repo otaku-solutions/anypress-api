@@ -46,6 +46,10 @@ describe('failed tasks close themselves once fixed', () => {
     // Wait for the whole job, not just its backup: the job settles its own failures after the backup is Done.
     const finished = async () =>
       (await t.pool.query("SELECT 1 FROM pgboss.job WHERE data->>'type' = 'tenant.backup' AND data->>'tenantId' = $1 AND state = 'completed'", [tenant.id])).rowCount ?? 0;
+    // The earlier test's backup job may still be running: let it finish so only this backup can raise the count.
+    await waitFor(async () =>
+      ((await t.pool.query("SELECT 1 FROM pgboss.job WHERE data->>'type' = 'tenant.backup' AND data->>'tenantId' = $1 AND state IN ('created', 'retry', 'active')", [tenant.id])).rowCount ?? 0) === 0,
+    );
     const before = await finished();
     await t.call('POST', `/v1/tenants/backups?externalId=${tenant.externalId}`);
     await waitFor(async () => (await finished()) > before);

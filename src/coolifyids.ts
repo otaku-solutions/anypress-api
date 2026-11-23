@@ -36,3 +36,12 @@ export function serviceIdStore(pool: Pool): ServiceIdStore {
     },
   };
 }
+
+/** CoolifyProvisionerConfig.versionInfo: a version's WordPress and PHP versions from the versions table. */
+export function versionInfoStore(pool: Pool): (versionId: string) => Promise<{ wordPressVersion: string; phpVersion: string } | undefined> {
+  return async (versionId) => {
+    const { rows } = await pool.query<{ wordpress_version: string; php_version: string }>('SELECT wordpress_version, php_version FROM versions WHERE id = $1', [versionId]);
+    const row = rows[0];
+    return row ? { wordPressVersion: row.wordpress_version, phpVersion: row.php_version } : undefined;
+  };
+}

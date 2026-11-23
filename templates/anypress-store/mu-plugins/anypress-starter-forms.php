@@ -104,24 +104,39 @@ function anypress_slot_form(string $key): int
         return (int) $made[$key];
     }
     // One save at a time makes forms, so two saves never both make one or drop each other's from the list. WordPress's
-    // own lock (an atomic row in wp_options, freed after 30 seconds if a save dies); a save that can't get it leaves
+    // own lock (an atomic row in wp_options, freed after two minutes if a save dies); a save that can't get it leaves
     // the spot waiting for the next save.
     require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-    if (!\WP_Upgrader::create_lock('anypress_slot_forms', 30)) {
+    if (!\WP_Upgrader::create_lock('anypress_slot_forms', 120)) {
         return 0;
     }
+    $mine = anypress_slot_option('anypress_slot_forms.lock');
     try {
         return anypress_slot_form_make($key, $forms[$key]);
     } finally {
-        \WP_Upgrader::release_lock('anypress_slot_forms');
+        // Only the lock this save took: after two minutes another save may hold it.
+        if (anypress_slot_option('anypress_slot_forms.lock') === $mine) {
+            \WP_Upgrader::release_lock('anypress_slot_forms');
+        }
     }
+}
+
+/** An option as it is in the database now, not as this request cached it (or cached it missing). */
+function anypress_slot_option(string $name)
+{
+    wp_cache_delete($name, 'options');
+    $missing = wp_cache_get('notoptions', 'options');
+    if (is_array($missing) && isset($missing[$name])) {
+        unset($missing[$name]);
+        wp_cache_set('notoptions', $missing, 'options');
+    }
+    return get_option($name, null);
 }
 
 /** Makes the form for a spot and adds it to the list; called only while holding the lock. 0 if anything fails. */
 function anypress_slot_form_make(string $key, array $form_config): int
 {
-    wp_cache_delete('anypress_slot_forms', 'options');
-    $made = (array) get_option('anypress_slot_forms', []);
+    $made = (array) anypress_slot_option('anypress_slot_forms');
     if (!empty($made[$key]) && \FluentForm\App\Models\Form::find((int) $made[$key])) {
         return (int) $made[$key];
     }
@@ -206,6 +221,8 @@ function anypress_slot_form_make(string $key, array $form_config): int
             $settings->value = wp_json_encode($value);
             $settings->save();
         }
+        // Added to the list as it is now, so nothing another save added since is lost.
+        $made = (array) anypress_slot_option('anypress_slot_forms');
         $made[$key] = (int) $form->id;
         // Its entries count as enquiries only once it is on the list (anypress-crm-lifecycle.php).
         if (!update_option('anypress_slot_forms', $made, false)) {

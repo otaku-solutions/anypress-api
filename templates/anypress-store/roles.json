@@ -216,6 +216,43 @@
             "anypress-blocks/anypress-blocks.php": "Extra blocks for pages: carousels, popups, maps, countdowns, counters, before-and-after images and more."
         }
     },
+    "back-office": {
+        "title": "Back Office",
+        "plugins": [
+            "fluent-security/fluent-security.php",
+            "fluent-smtp/fluent-smtp.php",
+            "fluent-crm/fluent-crm.php",
+            "fluentform/fluentform.php",
+            "fluent-support/fluent-support.php",
+            "fluent-player/fluent-player.php",
+            "easy-code-manager/easy-code-manager.php",
+            "ninja-tables/ninja-tables.php",
+            "ninja-charts/plugin.php",
+            "wp-social-reviews/wp-social-reviews.php",
+            "seo-by-rank-math/rank-math.php",
+            "automatorwp/automatorwp.php",
+            "wp-fusion-lite/wp-fusion-lite.php",
+            "fluent-toolkit/fluent-toolkit.php",
+            "anypress-blocks/anypress-blocks.php"
+        ],
+        "about": {
+            "fluent-security/fluent-security.php": "Login protection: blocks password guessing and adds two-step sign-in.",
+            "fluent-smtp/fluent-smtp.php": "Email delivery: makes sure the site's emails (receipts, password resets, forms) arrive. Set up for you.",
+            "fluent-crm/fluent-crm.php": "Contacts and email marketing: your customers and sign-ups in one list, with newsletters and automations.",
+            "fluentform/fluentform.php": "Forms: contact, quote, sign-up and survey forms, with entries kept on the site.",
+            "fluent-support/fluent-support.php": "Help desk: customer questions come in as tickets you answer from the site.",
+            "fluent-player/fluent-player.php": "Video and audio player for pages and posts.",
+            "easy-code-manager/easy-code-manager.php": "Code snippets and shortcodes: add PHP, CSS, JavaScript or a shortcode without another plugin.",
+            "ninja-tables/ninja-tables.php": "Tables: price lists, timetables, menus and comparisons on any page, sortable and searchable, and tables of your form entries or products.",
+            "ninja-charts/plugin.php": "Charts: bar, line, pie and more from a table, a spreadsheet you upload or your form entries.",
+            "wp-social-reviews/wp-social-reviews.php": "Reviews and chat: show your Google reviews and social feeds on any page, and a WhatsApp or Messenger chat button.",
+            "seo-by-rank-math/rank-math.php": "SEO: page titles, descriptions, sitemaps and search previews.",
+            "automatorwp/automatorwp.php": "Automations between WordPress and its plugins: when this happens, do that.",
+            "wp-fusion-lite/wp-fusion-lite.php": "Keeps your contacts in step: new users and buyers go to FluentCRM with tags.",
+            "fluent-toolkit/fluent-toolkit.php": "FluentHub: one dashboard to install and update the Fluent plugins.",
+            "anypress-blocks/anypress-blocks.php": "Extra blocks for pages: carousels, popups, maps, countdowns, counters, before-and-after images and more."
+        }
+    },
     "store": {
         "title": "Everything (stores bought before site types)",
         "plugins": [

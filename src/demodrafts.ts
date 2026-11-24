@@ -24,7 +24,7 @@ const DRAFT_DAYS = 14;
 /** Drafts saved by everyone in an hour, before the route answers 429. */
 export const DRAFTS_PER_HOUR = 300;
 /** The store template's site types (templates/anypress-store/roles.json). */
-export const SITE_TYPES = ['website', 'bookings', 'online-store', 'community', 'everything', 'store', 'highlevel'] as const;
+export const SITE_TYPES = ['website', 'bookings', 'online-store', 'community', 'everything', 'back-office', 'store', 'highlevel'] as const;
 /** Photos in one draft, and the most each may hold. */
 const MAX_IMAGES = 20;
 export const MAX_IMAGE_BYTES = 10 * 1024 ** 2;

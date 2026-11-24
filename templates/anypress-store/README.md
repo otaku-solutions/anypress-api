@@ -200,6 +200,7 @@ owner sees it in WordPress on Dashboard > Your plan, and the AnyPress dashboard 
 | `online-store` | Online store | Website's, plus FluentCart with Customer Rights, Fluent Support and FluentAffiliate |
 | `community` | Community & courses | Website's, plus FluentCommunity, FluentEvent (events and RSVPs) and FluentCart with Customer Rights (to sell memberships and courses) |
 | `everything` | Everything | all of them |
+| `back-office` | Back Office, behind a website or app that isn't built on WordPress | Website's, plus Fluent Support. The business's own site or app sends contacts to FluentCRM (its incoming webhooks or REST API) and opens tickets in Fluent Support (its REST API); the store holds the CRM, the emails, the support desk and its help pages |
 | `highlevel` | HighLevel site, for a HighLevel agency's sites | FluentAuth (login protection), FluentPlayer (video), FluentSnippets (code snippets and shortcodes), Rank Math, AutomatorWP, WP Fusion Lite, LeadConnector, FluentHub (FluentToolkit). HighLevel is the CRM, forms, calendars, payments and email, so no Fluent business plugin. Owners may add plugins of their own (`ownPlugins`) |
 | `store` | Everything, for stores bought before site types | all of them |
 

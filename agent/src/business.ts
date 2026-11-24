@@ -31,6 +31,7 @@ const SITE_TYPES: Record<string, string> = {
   store: 'an online store',
   community: 'a community and courses site',
   everything: 'a website with a store, bookings and a community',
+  'back-office': 'the contacts, emails and support desk behind a website or app built elsewhere',
 };
 
 /** Keeps a fact the site sent to one tidy line of at most `max` characters. */

@@ -109,6 +109,13 @@ describe('contactUpdateFromStripe', () => {
     expect(contactUpdateFromStripe(partial)).toBeNull();
   });
 
+  it('skips an event older than the last one applied, so a late payment does not undo a cancel', () => {
+    const paid = { ...received('invoice.paid', { customer_email: 'ava@anypress.example' }), created: 1_700_000_000 };
+    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_700_000_100 })).toBeNull();
+    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_700_000_000 })?.tags).toEqual(['Customer']);
+    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_699_999_000 })?.tags).toEqual(['Customer']);
+  });
+
   it('uses the tag names and plan it is given, and ignores other events', () => {
     const event = received('invoice.paid', { customer_email: 'ava@anypress.example' });
     expect(contactUpdateFromStripe(event, { tags: { customer: 'Paying' } })?.tags).toEqual(['Paying']);

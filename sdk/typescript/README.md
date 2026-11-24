@@ -95,8 +95,14 @@ export async function POST(request: Request) {
       break;
     }
   }
-  const update = contactUpdateFromStripe(event, { email });
-  if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+  // Stripe doesn't promise to send events in order, and retries a failed one later: pass the `created` time of the last
+  // event you applied to this customer, and an older one returns null instead of undoing it.
+  const lastEventAt = await lastStripeEventAt(event); // your database, by Stripe customer id or email
+  const update = contactUpdateFromStripe(event, { email, lastEventAt });
+  if (update) {
+    await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+    await saveStripeEventAt(event, event.created); // your database
+  }
   return new Response(null, { status: 200 });
 }
 ```
@@ -114,6 +120,8 @@ export async function POST(request: Request) {
 | `charge.dispute.created` | Disputed | |
 
 The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. The `customer.subscription.*` events and `charge.dispute.created` carry no email, so pass it as `email` (for a dispute, from `stripe.charges.retrieve(dispute.charge)`); without one they throw. An expired checkout with no email is skipped. Other events, setup-mode checkouts and partial refunds return `null`. In Stripe, send these events to your webhook route. Send it to the webhook over https. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
+
+A site with no server of its own can do the same with the ready-made [n8n workflow](../../integrations/n8n/README.md#workflow-stripe-payments-into-a-back-office-store).
 
 ## Words used here
 

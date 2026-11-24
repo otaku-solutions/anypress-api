@@ -37,6 +37,31 @@ Pick the events to listen for (Site Ready by default). Each item has the event, 
 
 AnyPress only sends to `https://` addresses on the public internet, so the trigger needs an n8n that is reachable from outside, such as n8n Cloud or a self-hosted n8n behind its own domain.
 
+## Workflow: Stripe payments into a Back Office store
+
+A site with no server of its own (a site builder, a static site) can still keep a Back Office store's FluentCRM in step with its Stripe payments. [workflows/back-office-stripe.json](workflows/back-office-stripe.json) is a ready-made n8n workflow for this, using n8n's own Stripe nodes. No AnyPress node is needed. Each payment becomes tags on the customer's contact, and a "Tag Applied" automation in FluentCRM can start emails from them:
+
+| Stripe event | Tags added | Tags taken off |
+|---|---|---|
+| `checkout.session.completed` (paid) | Customer, the plan | Trial, Trial Ending, Cancelled, Checkout Abandoned |
+| `invoice.paid` | Customer | Cancelled, Payment Failed, Past Due |
+| `invoice.payment_failed` | Payment Failed | |
+| `customer.subscription.updated` (plan or status changed) | The new plan; Past Due when late | The old plan; Past Due and Payment Failed once active again |
+| `customer.subscription.trial_will_end` | Trial Ending | |
+| `customer.subscription.deleted` | Cancelled | Customer, the plan, Past Due |
+| `charge.refunded` (in full) | Refunded | Customer |
+| `charge.dispute.created` | Disputed | |
+
+1. In n8n, open **Workflows**, choose **Import from File** and pick the file.
+2. In **Stripe Trigger**, **Get the customer** and **Get the charge**, choose your Stripe credential. A restricted key works if it can read customers and charges and write webhook endpoints. On activation, n8n adds the webhook to Stripe by itself and checks Stripe's signature on every event.
+3. In FluentCRM, go to **Settings** > **Incoming Webhooks** and make a webhook. In **Shape the update**, paste its address into `WEBHOOK_URL`. The address is the webhook's key, so keep it in n8n only. It must start with `https://`. Rename any tag in `TAGS` to match the tags you already use.
+4. Set `metadata.plan` (for example `Pro`) on your Stripe Checkout Sessions and subscriptions, and the plan's name becomes a tag.
+5. Activate the workflow.
+
+Subscription events and disputes carry no email, so the workflow looks up the customer or the charge in Stripe first. A Stripe customer who was deleted has no email any more, and that run fails with a plain reason. Stripe doesn't promise to send events in order, so the workflow keeps the time of the last event it applied to each contact and skips any older one. Without this, a late "paid" could undo a cancel. A run also fails when FluentCRM doesn't take an update, for example when the address is wrong. Failed runs show in **Executions**, and in your error workflow if you have one.
+
+n8n's Stripe Trigger can't pick `checkout.session.async_payment_succeeded` (a bank debit that clears days later) or `checkout.session.expired` (a checkout left unfinished, tagged Checkout Abandoned). To use them, pick `*` (every event) in the trigger's events. The workflow handles both and ignores every other event. If your app has its own server, the [TypeScript SDK](../../sdk/typescript/README.md#back-office-payments-from-your-own-app) does the same job in code.
+
 ## Help
 
 Step-by-step guides are in the [AnyPress docs](https://shop.anypress.io/docs-category/automation/), and recipes are on [anypress.io/automate](https://anypress.io/automate). Questions: support@anypress.io.

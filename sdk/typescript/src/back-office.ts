@@ -18,6 +18,8 @@
 /** The parts of a Stripe event this reads. A `Stripe.Event` from the `stripe` package fits. */
 export interface StripeEventLike {
   type: string;
+  /** When Stripe made the event, in Unix seconds. */
+  created?: number;
   data: { object: object; previous_attributes?: object };
 }
 
@@ -59,6 +61,12 @@ export interface ContactUpdateOptions {
    * `charge.dispute.created` only have ids. Look it up in your own database (or with `stripe.customers.retrieve`).
    */
   email?: string;
+  /**
+   * The `created` time (Unix seconds) of the last event you applied for this customer. Stripe doesn't promise to send
+   * events in order, and retries a failed one later, so an older event (say a payment, after the cancel) returns `null`
+   * instead of undoing a newer one. Keep `event.created` with the customer in your own database after each update.
+   */
+  lastEventAt?: number;
 }
 
 /** The body FluentCRM's incoming webhook takes. */
@@ -168,6 +176,7 @@ const HANDLERS: Record<string, (context: Context) => Change | null> = {
  * | `charge.dispute.created` | Disputed | |
  */
 export function contactUpdateFromStripe(event: StripeEventLike, options: ContactUpdateOptions = {}): ContactUpdate | null {
+  if (options.lastEventAt !== undefined && event.created !== undefined && event.created < options.lastEventAt) return null;
   const object = event.data.object as Obj;
   const context: Context = {
     object,

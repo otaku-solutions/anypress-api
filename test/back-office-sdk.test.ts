@@ -64,6 +64,10 @@ describe('contactUpdateFromStripe', () => {
     (back.data as { previous_attributes?: object }).previous_attributes = { status: 'past_due' };
     expect(contactUpdateFromStripe(back, { email })).toEqual({ email, detach_tags: ['Past Due', 'Payment Failed'] });
 
+    const cleared = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: {} });
+    (cleared.data as { previous_attributes?: object }).previous_attributes = { metadata: { plan: 'Pro' } };
+    expect(contactUpdateFromStripe(cleared, { email })).toEqual({ email, detach_tags: ['Pro'] });
+
     const quiet = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: { plan: 'Pro' } });
     (quiet.data as { previous_attributes?: object }).previous_attributes = { cancel_at_period_end: false };
     expect(contactUpdateFromStripe(quiet, { email })).toBeNull();

@@ -74,12 +74,26 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(request: Request) {
   const event = stripe.webhooks.constructEvent(await request.text(), request.headers.get('stripe-signature')!, process.env.STRIPE_WEBHOOK_SECRET!);
   // ...your own work first (your database, your app's access)...
+  // Subscription events and disputes carry only ids. Keep each customer's id and email in your own database when they
+  // pay, because a deleted Stripe customer no longer has an email.
+  const emailFor = async (customer: string | Stripe.Customer | Stripe.DeletedCustomer | null) => {
+    if (!customer) return undefined;
+    const found = typeof customer === 'string' ? await stripe.customers.retrieve(customer) : customer;
+    return (!found.deleted && found.email) || (await emailForStripeCustomer(found.id)); // your lookup
+  };
   let email: string | undefined;
-  if (event.type.startsWith('customer.subscription.')) {
-    // Subscription events carry only the customer id. Keep the id and email in your own database when they pay, because
-    // a deleted Stripe customer no longer has an email.
-    const customer = await stripe.customers.retrieve(event.data.object.customer as string);
-    email = (!customer.deleted && customer.email) || (await emailForStripeCustomer(customer.id)); // your lookup
+  switch (event.type) {
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+    case 'customer.subscription.trial_will_end':
+      email = await emailFor(event.data.object.customer);
+      break;
+    case 'charge.dispute.created': {
+      const { charge } = event.data.object;
+      const found = typeof charge === 'string' ? await stripe.charges.retrieve(charge) : charge;
+      email = found.billing_details.email ?? found.receipt_email ?? (await emailFor(found.customer));
+      break;
+    }
   }
   const update = contactUpdateFromStripe(event, { email });
   if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);

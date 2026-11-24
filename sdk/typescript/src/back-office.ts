@@ -108,10 +108,11 @@ function paidCheckout({ object, tags, plan }: Context, completed: boolean): Chan
   };
 }
 
-/** A plan change: the old plan's name is in previous_attributes.metadata. */
+/** A plan change: the old plan's name is in previous_attributes.metadata. A plan taken off just loses its tag. */
 function planSwap(previous: Obj, plan?: string): [string[], string[]] {
   const oldPlan = text(child(previous.metadata, 'plan'));
-  return plan && oldPlan && oldPlan !== plan ? [[plan], [oldPlan]] : [[], []];
+  if (!oldPlan || oldPlan === plan) return [[], []];
+  return [plan ? [plan] : [], [oldPlan]];
 }
 
 /** A status change: late payments add Past Due, and an active subscription clears it. */

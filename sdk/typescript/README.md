@@ -98,7 +98,7 @@ export async function POST(request: Request) {
   // Stripe doesn't promise to send events in order, and retries a failed one later. Keep when each of the customer's
   // tags last changed, and a tag a newer event already changed is left alone. Handle one customer's events one at a
   // time (a lock or a queue per customer), so two at once can't read the same times and overwrite each other.
-  const address = email ?? contactUpdateFromStripe(event)?.email; // checkouts, invoices and refunds carry their own
+  const address = (email ?? contactUpdateFromStripe(event)?.email)?.toLowerCase(); // checkouts, invoices and refunds carry their own
   if (!address) return new Response(null, { status: 200 });
   await withCustomerLock(address, async () => {
     const tagsChangedAt = await loadTagTimes(address); // your database

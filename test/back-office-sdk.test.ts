@@ -129,6 +129,11 @@ describe('contactUpdateFromStripe', () => {
   it('tagTimes records the event time for every tag an update changed, keeping newer ones', () => {
     const update = { email: 'ava@anypress.example', tags: ['Customer'], detach_tags: ['Trial'] };
     expect(tagTimes(update, 200, { Trial: 300, Disputed: 50 })).toEqual({ Customer: 200, Trial: 300, Disputed: 50 });
+    // Tag names that are also object properties are plain keys.
+    const odd = { email: 'ava@anypress.example', tags: ['constructor', '__proto__'] };
+    expect(Object.entries(tagTimes(odd, 200))).toEqual([['constructor', 200], ['__proto__', 200]]);
+    const plan = { ...received('checkout.session.completed', { payment_status: 'paid', customer_email: 'ava@anypress.example', metadata: { plan: 'constructor' } }), created: 200 };
+    expect(contactUpdateFromStripe(plan, { tagsChangedAt: {} })?.tags).toEqual(['Customer', 'constructor']);
   });
 
   it('a first plan on a subscription is added', () => {

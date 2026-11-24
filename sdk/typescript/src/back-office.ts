@@ -192,7 +192,8 @@ export function contactUpdateFromStripe(event: StripeEventLike, options: Contact
   const change = HANDLERS[event.type]?.(context);
   if (!change) return null;
   // A tag a newer event already changed stays as that event left it.
-  const current = (tag: string) => event.created === undefined || event.created >= (options.tagsChangedAt?.[tag] ?? -Infinity);
+  const times = options.tagsChangedAt ?? {};
+  const current = (tag: string) => event.created === undefined || !Object.hasOwn(times, tag) || event.created >= (times[tag] ?? -Infinity);
   change.add = change.add.filter(current);
   change.remove = change.remove.filter(current);
   if (change.add.length === 0 && change.remove.length === 0) return null;
@@ -218,8 +219,9 @@ export function contactUpdateFromStripe(event: StripeEventLike, options: Contact
  * `tagsChangedAt`.
  */
 export function tagTimes(update: ContactUpdate, created: number, tagsChangedAt: Record<string, number> = {}): Record<string, number> {
-  const times = { ...tagsChangedAt };
-  for (const tag of [...(update.tags ?? []), ...(update.detach_tags ?? [])]) times[tag] = Math.max(created, times[tag] ?? created);
+  // No prototype, so any tag name (even "constructor" or "__proto__") is an ordinary key.
+  const times: Record<string, number> = Object.assign(Object.create(null), tagsChangedAt);
+  for (const tag of [...(update.tags ?? []), ...(update.detach_tags ?? [])]) times[tag] = Object.hasOwn(times, tag) ? Math.max(created, times[tag] ?? created) : created;
   return times;
 }
 

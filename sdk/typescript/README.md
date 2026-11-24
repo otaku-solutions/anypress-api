@@ -60,6 +60,38 @@ WAAS_API_URL=https://api.example.com WAAS_API_KEY=<key> WAAS_API_SECRET=<secret>
 
 Running it again is safe: a second create with the same `externalId` answers with the store already made.
 
+## Back Office: payments from your own app
+
+A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) and keep its address on your server; it is the key.
+
+```ts
+import Stripe from 'stripe';
+import { contactUpdateFromStripe, sendContactUpdate } from 'waas-provisioning-sdk';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+// Your Stripe webhook route, with the raw request body.
+export async function POST(request: Request) {
+  const event = stripe.webhooks.constructEvent(await request.text(), request.headers.get('stripe-signature')!, process.env.STRIPE_WEBHOOK_SECRET!);
+  // ...your own work first (your database, your app's access)...
+  const email = event.type === 'customer.subscription.deleted'
+    ? ((await stripe.customers.retrieve(event.data.object.customer as string)) as Stripe.Customer).email ?? undefined
+    : undefined;
+  const update = contactUpdateFromStripe(event, { email });
+  if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+  return new Response(null, { status: 200 });
+}
+```
+
+| Stripe event | Tags added | Tags taken off |
+|---|---|---|
+| `checkout.session.completed` (paid) | Customer, the plan | Trial, Cancelled |
+| `invoice.paid` | Customer | Cancelled |
+| `customer.subscription.deleted` | Cancelled | Customer, the plan |
+| `charge.refunded` (in full) | Refunded | Customer |
+
+The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. Other events return `null`. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
+
 ## Words used here
 
 - A **store** is one customer's WordPress website. The API calls it a **tenant**, so the methods are `tenants.*`.

@@ -28,7 +28,7 @@ paths:
       parameters:
         - name: productId
           in: query
-          description: Counts for this storefront only. The product list still holds every product.
+          description: Counts for this storefront only. The product list still holds every product but the seller storefront template's.
           schema: { type: string, format: uuid }
       responses:
         '200':
@@ -3868,7 +3868,7 @@ components:
     Product:
       type: object
       additionalProperties: false
-      required: [id, name, tenantCount, maxTenants, versionCount, productionVersionId, resellerId, resellerName, followsProductId, highlevelAgency, cleanDashboard, dateCreated]
+      required: [id, name, tenantCount, maxTenants, versionCount, productionVersionId, resellerId, resellerName, followsProductId, highlevelAgency, cleanDashboard, storefrontTemplate, dateCreated]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -3885,6 +3885,7 @@ components:
           description: 'The storefront whose new production versions this one gets (it started from it); null for none'
         highlevelAgency: { type: boolean, description: "A HighLevel agency's storefront: its tenants made without a site type get the highlevel one" }
         cleanDashboard: { type: boolean, description: "Its stores show their own wp-admin Dashboard home instead of WordPress's default boxes (setCleanDashboard)" }
+        storefrontTemplate: { type: boolean, description: "The seller storefront template's product (STOREFRONT_PRODUCT_ID): its versions build the ready-made storefronts. Left out of the overview's product list" }
         dateCreated: { type: string, format: date-time }
     StoreDays:
       type: object

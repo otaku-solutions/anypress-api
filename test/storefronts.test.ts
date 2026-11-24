@@ -46,6 +46,17 @@ describe('ready-made storefronts', () => {
     expect(await get(sellerId)).toBeNull();
   });
 
+  it('keeps the template product out of the switcher, and marks it on the product list', async () => {
+    t.deps.config.storefrontProductId = storefrontProductId;
+    const overview = (await (await t.call('GET', '/admin/overview', { auth: ADMIN })).json()) as { products: { id: string }[] };
+    const ids = overview.products.map((p) => p.id);
+    expect(ids).toContain(sellerId);
+    expect(ids).not.toContain(storefrontProductId);
+    const products = (await (await t.call('GET', '/admin/products', { auth: ADMIN })).json()) as { id: string; storefrontTemplate: boolean }[];
+    expect(products.find((p) => p.id === storefrontProductId)?.storefrontTemplate).toBe(true);
+    expect(products.find((p) => p.id === sellerId)?.storefrontTemplate).toBe(false);
+  });
+
   it('builds one, connected with a new key of the product', async () => {
     t.deps.config.storefrontProductId = storefrontProductId;
     const lookups: string[] = [];

@@ -97,7 +97,7 @@ function anypress_sample_order(Customer $customer, array $lines, float $daysAgo,
     return Order::find($order->id);
 }
 
-/** After the orders: each customer's totals counted again, and the owner's "new sale" emails left unsent. */
+/** After the orders: each customer's totals counted again, the owner's "new sale" emails left unsent, and Cash on Delivery on. */
 function anypress_sample_orders_done(): void
 {
     // Each customer's order count, spend and first order, counted again now the orders carry their real dates.
@@ -123,6 +123,11 @@ function anypress_sample_orders_done(): void
     // FluentCart's follow-up for each paid order (the shop owner's "new sale" email) would all run on the first
     // visit, dated today; the demo's orders were paid months ago, so those stay unsent.
     as_unschedule_all_actions('fluent_cart/order_paid_async_private_handle', [], 'fluent-cart');
+    // So a visitor can place an order of their own in the demo: FluentCart's Cash on Delivery, switched on as its
+    // Payments screen does (a card payment needs the store's own Stripe account). Nothing is charged.
+    if (\FluentCart\App\Modules\PaymentMethods\Core\GatewayManager::has('offline_payment')) {
+        \FluentCart\App\Modules\PaymentMethods\Core\GatewayManager::getInstance('offline_payment')->updateSettings(['is_active' => 'yes']);
+    }
     $all = array_merge((array) get_option('anypress_sample_orders', []), $GLOBALS['anypress_sample_orders'] ?? []);
     update_option('anypress_sample_orders', array_values(array_unique($all)), false);
 }

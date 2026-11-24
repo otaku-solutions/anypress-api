@@ -14,7 +14,7 @@ import {
   renewAtStorefront,
   transferCode,
 } from "../domainsales.ts";
-import { domainAnswered, domainInUse, findTenant, isBrandStoreName, normalizeDomain } from "../tenants.ts";
+import { domainAnswered, domainInUse, findTenant, isBrandStoreName, isReservedDomain, normalizeDomain } from "../tenants.ts";
 
 interface AddDomainParams {
   domainName: string;
@@ -65,12 +65,14 @@ export async function addTenantDomain(
     [tenant.id, domain],
   );
   const existing = rows[0];
-  const taken =
-    brandNames && isBrandStoreName(domain, config.brandDomain)
-      ? domainAnswered(pool, domain)
-      : domainInUse(pool, domain, config.platformDomain, config.brandDomain);
-  if (!existing && (await taken))
-    throw badRequest(`Domain ${domain} is already in use`);
+  const brandName = brandNames && isBrandStoreName(domain, config.brandDomain);
+  // A name the platform admin gave under the brand domain stays theirs to pick, even once it's on the store.
+  const taken = existing
+    ? !brandName && isReservedDomain(domain, config.platformDomain, config.brandDomain)
+    : brandName
+      ? await domainAnswered(pool, domain)
+      : await domainInUse(pool, domain, config.platformDomain, config.brandDomain);
+  if (taken) throw badRequest(`Domain ${domain} is already in use`);
 
   if (!existing || setAsMain) {
     await applyDomains(deps, tenant.id, async (client) => {

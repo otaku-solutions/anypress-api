@@ -214,6 +214,9 @@ describe('admin endpoints', () => {
     // A storefront's own key still gets "in use" for any brand name.
     const viaKey = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'help-center.brand.example' } });
     expect(viaKey.status).toBe(400);
+    // Nor can it pick the brand name the admin already put on its store.
+    const reselect = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'community.brand.example', setAsMainDomain: true } });
+    expect(reselect.status).toBe(400);
   });
 
   it('backups: includes a deleted tenant\'s, with expiresAt', async () => {

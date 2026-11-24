@@ -4,7 +4,7 @@ All notable changes to `waas-provisioning-sdk` are listed here. Versions follow 
 
 ## Unreleased
 
-- `contactUpdateFromStripe()` and `sendContactUpdate()`: keep a Back Office store's FluentCRM in step with payments your own app takes with Stripe (paid, renewed, failed and past-due payments, plan changes, trials ending, abandoned checkouts, cancels, refunds and disputes become tags).
+- `contactUpdateFromStripe()`, `sendContactUpdate()` and `tagTimes()`: keep a Back Office store's FluentCRM in step with payments your own app takes with Stripe (a late event leaves alone the tags a newer one already changed; paid, renewed, failed and past-due payments, plan changes, trials ending, abandoned checkouts, cancels, refunds and disputes become tags).
 - `tenants.addEmailPack()`: emails on top of a store's monthly plan (`POST /v1/tenants/email-packs`).
 - `tenants.goLive()`: makes a site moved in live (`POST /v1/tenants/go-live`); tenants have `onHold`.
 - `tenants.getImport()`: how a move in went, with `siteReport`, what's on the moved site (`GET /v1/tenants/import`).

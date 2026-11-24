@@ -62,11 +62,11 @@ Running it again is safe: a second create with the same `externalId` answers wit
 
 ## Back Office: payments from your own app
 
-A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) and keep its address on your server; it is the key.
+A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) with no tags or lists of its own (FluentCRM adds them to any update that brings no tags), and keep its address on your server; it is the key.
 
 ```ts
 import Stripe from 'stripe';
-import { contactUpdateFromStripe, sendContactUpdate } from 'waas-provisioning-sdk';
+import { contactUpdateFromStripe, sendContactUpdate, tagTimes } from 'waas-provisioning-sdk';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -95,8 +95,18 @@ export async function POST(request: Request) {
       break;
     }
   }
-  const update = contactUpdateFromStripe(event, { email });
-  if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+  // Stripe doesn't promise to send events in order, and retries a failed one later. Keep when each of the customer's
+  // tags last changed, and a tag a newer event already changed is left alone. Handle one customer's events one at a
+  // time (a lock or a queue per customer), so two at once can't read the same times and overwrite each other.
+  const address = (email ?? contactUpdateFromStripe(event)?.email)?.toLowerCase(); // checkouts, invoices and refunds carry their own
+  if (!address) return new Response(null, { status: 200 });
+  await withCustomerLock(address, async () => {
+    const tagsChangedAt = await loadTagTimes(address); // your database
+    const update = contactUpdateFromStripe(event, { email: address, tagsChangedAt });
+    if (!update) return;
+    await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+    await saveTagTimes(address, tagTimes(update, event.created, tagsChangedAt)); // your database
+  });
   return new Response(null, { status: 200 });
 }
 ```
@@ -114,6 +124,8 @@ export async function POST(request: Request) {
 | `charge.dispute.created` | Disputed | |
 
 The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. The `customer.subscription.*` events and `charge.dispute.created` carry no email, so pass it as `email` (for a dispute, from `stripe.charges.retrieve(dispute.charge)`); without one they throw. An expired checkout with no email is skipped. Other events, setup-mode checkouts and partial refunds return `null`. In Stripe, send these events to your webhook route. Send it to the webhook over https. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
+
+A site with no server of its own can do the same with the ready-made [n8n workflow](../../integrations/n8n/README.md#workflow-stripe-payments-into-a-back-office-store).
 
 ## Words used here
 

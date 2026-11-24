@@ -60,6 +60,61 @@ WAAS_API_URL=https://api.example.com WAAS_API_KEY=<key> WAAS_API_SECRET=<secret>
 
 Running it again is safe: a second create with the same `externalId` answers with the store already made.
 
+## Back Office: payments from your own app
+
+A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) and keep its address on your server; it is the key.
+
+```ts
+import Stripe from 'stripe';
+import { contactUpdateFromStripe, sendContactUpdate } from 'waas-provisioning-sdk';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+// Your Stripe webhook route, with the raw request body.
+export async function POST(request: Request) {
+  const event = stripe.webhooks.constructEvent(await request.text(), request.headers.get('stripe-signature')!, process.env.STRIPE_WEBHOOK_SECRET!);
+  // ...your own work first (your database, your app's access)...
+  // Subscription events and disputes carry only ids. Keep each customer's id and email in your own database when they
+  // pay, because a deleted Stripe customer no longer has an email.
+  const emailFor = async (customer: string | Stripe.Customer | Stripe.DeletedCustomer | null) => {
+    if (!customer) return undefined;
+    const found = typeof customer === 'string' ? await stripe.customers.retrieve(customer) : customer;
+    return (!found.deleted && found.email) || (await emailForStripeCustomer(found.id)); // your lookup
+  };
+  let email: string | undefined;
+  switch (event.type) {
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+    case 'customer.subscription.trial_will_end':
+      email = await emailFor(event.data.object.customer);
+      break;
+    case 'charge.dispute.created': {
+      const { charge } = event.data.object;
+      const found = typeof charge === 'string' ? await stripe.charges.retrieve(charge) : charge;
+      email = found.billing_details.email ?? found.receipt_email ?? (await emailFor(found.customer));
+      break;
+    }
+  }
+  const update = contactUpdateFromStripe(event, { email });
+  if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
+  return new Response(null, { status: 200 });
+}
+```
+
+| Stripe event | Tags added | Tags taken off |
+|---|---|---|
+| `checkout.session.completed` (paid) or `checkout.session.async_payment_succeeded` | Customer, the plan | Trial, Trial Ending, Cancelled, Checkout Abandoned |
+| `checkout.session.expired` (the shopper typed an email) | Checkout Abandoned | |
+| `invoice.paid` | Customer | Cancelled, Payment Failed, Past Due |
+| `invoice.payment_failed` | Payment Failed | |
+| `customer.subscription.updated` (plan or status changed) | The new plan; Past Due when late | The old plan; Past Due and Payment Failed once active again |
+| `customer.subscription.trial_will_end` | Trial Ending | |
+| `customer.subscription.deleted` | Cancelled | Customer, the plan, Past Due |
+| `charge.refunded` (in full) | Refunded | Customer |
+| `charge.dispute.created` | Disputed | |
+
+The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. The `customer.subscription.*` events and `charge.dispute.created` carry no email, so pass it as `email` (for a dispute, from `stripe.charges.retrieve(dispute.charge)`); without one they throw. An expired checkout with no email is skipped. Other events, setup-mode checkouts and partial refunds return `null`. In Stripe, send these events to your webhook route. Send it to the webhook over https. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
+
 ## Words used here
 
 - A **store** is one customer's WordPress website. The API calls it a **tenant**, so the methods are `tenants.*`.

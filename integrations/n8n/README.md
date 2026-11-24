@@ -54,7 +54,7 @@ A site with no server of its own (a site builder, a static site) can still keep 
 
 1. In n8n, open **Workflows**, choose **Import from File** and pick the file.
 2. In **Stripe Trigger**, **Get the customer** and **Get the charge**, choose your Stripe credential. A restricted key works if it can read customers and charges and write webhook endpoints. On activation, n8n adds the webhook to Stripe by itself and checks Stripe's signature on every event.
-3. In FluentCRM, go to **Settings** > **Incoming Webhooks** and make a webhook. In **Shape the update**, paste its address into `WEBHOOK_URL`. The address is the webhook's key, so keep it in n8n only. It must start with `https://`. Rename any tag in `TAGS` to match the tags you already use.
+3. In FluentCRM, go to **Settings** > **Incoming Webhooks** and make a webhook. Leave its tags and lists empty: FluentCRM adds a webhook's own tags to any update that brings none, which would undo what this workflow leaves alone. In **Shape the update**, paste its address into `WEBHOOK_URL`. The address is the webhook's key, so keep it in n8n only. It must start with `https://`. Rename any tag in `TAGS` to match the tags you already use.
 4. Set `metadata.plan` (for example `Pro`) on your Stripe Checkout Sessions and subscriptions, and the plan's name becomes a tag.
 5. Activate the workflow.
 

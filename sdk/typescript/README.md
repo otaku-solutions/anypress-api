@@ -62,7 +62,7 @@ Running it again is safe: a second create with the same `externalId` answers wit
 
 ## Back Office: payments from your own app
 
-A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) and keep its address on your server; it is the key.
+A Back Office store holds the contacts, emails and support desk behind a site or app built somewhere else. When that app takes payments with Stripe, pass each payment on to the store's FluentCRM so its tags (and the emails that start from them) stay right. Make an incoming webhook in FluentCRM (**FluentCRM**, **Settings**, **Incoming Webhooks**) with no tags or lists of its own (FluentCRM adds them to any update that brings no tags), and keep its address on your server; it is the key.
 
 ```ts
 import Stripe from 'stripe';

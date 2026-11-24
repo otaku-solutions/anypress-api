@@ -12,7 +12,9 @@ bp.landingPage = '/';
 // The kit's hero photo crops the couple at the shoulders; this one shows them whole (Pexels 6328569, Pexels licence).
 const HERO = execSync('git log -1 --format=%H -- hero.jpg', { cwd: new URL('.', import.meta.url) }).toString().trim();
 for (const st of bp.steps) if (st.step === 'writeFile' && st.path?.endsWith('/demo/aisle/photos/hero.jpg')) st.data.url = `https://raw.githubusercontent.com/otaku-solutions/anypress-api/${HERO}/demos/swipe/hero.jpg`;
-bp.features = { ...(bp.features || {}), networking: true }; // FluentCart's Stripe test mode talks to api.stripe.com
+// FluentHub (FluentToolkit), on every AnyPress store: the Fluent plugins in one workspace with one menu, as stores have it.
+const hubAt = bp.steps.findIndex((st) => st.step === 'installPlugin' && /anypress-client/.test(st.pluginData?.url || ''));
+bp.steps.splice(hubAt, 0, { step: 'installPlugin', pluginData: { resource: 'url', url: 'https://raw.githubusercontent.com/otaku-solutions/anypress-api/96ba753d76e907b3b3349766312bb4c7c1384cbf/templates/anypress-store/plugins/fluent-toolkit-2.1.4.zip' }, options: { activate: true, targetFolderName: 'fluent-toolkit' }, progress: { caption: 'Adding FluentHub' } });
 const logo = readFileSync(new URL('swipe-wordmark.b64', here), 'utf8').trim();
 bp.steps.push(
   { step: 'writeFile', path: '/wordpress/wp-content/mu-plugins/swipe-protection.php', data: readFileSync(new URL('swipe-protection.php', here), 'utf8').replace('__SWIPE_WORDMARK__', logo) },

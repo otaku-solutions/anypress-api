@@ -16,15 +16,6 @@ if (defined('DB_ENGINE') && DB_ENGINE === 'sqlite') {
     add_filter('query', static fn ($q) => preg_match('/^\s*SELECT\s+(GET|RELEASE)_LOCK\(/i', (string) $q) ? "SELECT '1'" : $q);
 }
 
-// Card payments in the demo: FluentCart's Stripe takes API keys only as constants, so test keys pasted on the Package
-// Protection screen (kept in this browser-only site, never in the demo link) become those constants. Live keys are refused.
-$anypress_swipe_stripe = (array) get_option('anypress_swipe_stripe', []);
-if (str_starts_with((string) ($anypress_swipe_stripe['pk'] ?? ''), 'pk_test_') && str_starts_with((string) ($anypress_swipe_stripe['sk'] ?? ''), 'sk_test_')) {
-    defined('FCT_STRIPE_TEST_PUBLIC_KEY') || define('FCT_STRIPE_TEST_PUBLIC_KEY', $anypress_swipe_stripe['pk']);
-    defined('FCT_STRIPE_TEST_SECRET_KEY') || define('FCT_STRIPE_TEST_SECRET_KEY', $anypress_swipe_stripe['sk']);
-}
-unset($anypress_swipe_stripe);
-
 const ANYPRESS_SWIPE_OPTION = 'anypress_swipe_settings';
 const ANYPRESS_SWIPE_KEY = 'swipe_protection';
 
@@ -158,9 +149,16 @@ add_action('wp_footer', static function () {
         .anypress-swipe .anypress-swipe__box:checked{background:#111!important}.anypress-swipe .anypress-swipe__box:checked::after{transform:translateX(20px)}
         .anypress-swipe__box:focus-visible{outline:2px solid #7b5cff;outline-offset:2px}
         @media (prefers-reduced-motion:reduce){.anypress-swipe__box,.anypress-swipe__box::after{transition:none}}
+        .anypress-card{display:grid;gap:10px;padding:4px 0}.anypress-card label{display:grid;gap:4px;font-size:.85em;font-weight:500}
+        .anypress-card input{width:100%;padding:10px 12px;border:1px solid #d6d3dc;border-radius:8px;font:inherit;font-size:1em;letter-spacing:.04em;background:#fff}
+        .anypress-card__two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.anypress-card__note{margin:0;font-size:.8em;color:#666}
         .anypress-swipe.is-busy{opacity:.6;pointer-events:none}
     </style>
     <script>
+    window.addEventListener('fluent_cart_load_payments_demo_card', function (e) {
+        var b = window.fluentcart_checkout_vars && window.fluentcart_checkout_vars.submit_button;
+        e.detail.paymentLoader.enableCheckoutButton(b ? b.text : 'Place Order');
+    });
     document.addEventListener('change', function (e) {
         var box = e.target.closest && e.target.closest('.anypress-swipe__box');
         if (!box) return;
@@ -206,8 +204,77 @@ function anypress_swipe_orders(): array
     return $rows;
 }
 
-// Stripe Connect's sign-in can't finish inside a browser-only demo, so Stripe takes test API keys pasted in its settings.
-add_filter('fluent_cart/form_disable_stripe_connect', '__return_true');
+// A pretend card payment for the demo: a "Card" choice at checkout with a card form. Any card number goes through and
+// the order is marked paid, the way a card order would be. Nothing is charged and nothing leaves the browser.
+add_action('fluent_cart/register_payment_methods', static function ($args) {
+    if (!class_exists('\FluentCart\App\Modules\PaymentMethods\Cod\Cod')) {
+        return;
+    }
+    $card = new class () extends \FluentCart\App\Modules\PaymentMethods\Cod\Cod {
+        public array $supportedFeatures = ['payment', 'refund', 'local_refund_only', 'multi_currency'];
+
+        public function boot()
+        {
+        }
+
+        public function meta(): array
+        {
+            return [
+                'title' => 'Card',
+                'route' => 'demo_card',
+                'slug' => 'demo_card',
+                'description' => 'Pay by card (demo: nothing is charged)',
+                'logo' => \FluentCart\App\Vite::getAssetUrl('images/payment-methods/card.svg'),
+                'icon' => \FluentCart\App\Vite::getAssetUrl('images/payment-methods/card.svg'),
+                'brand_color' => '#111111',
+                'upcoming' => false,
+                'status' => true,
+            ];
+        }
+
+        public function makePaymentFromPaymentInstance(\FluentCart\App\Services\Payments\PaymentInstance $paymentInstance)
+        {
+            $order = $paymentInstance->order;
+            $order->payment_method_title = 'Card';
+            $order->save();
+            $transaction = $paymentInstance->transaction;
+            $transaction->status = \FluentCart\App\Helpers\Status::TRANSACTION_SUCCEEDED;
+            $transaction->card_brand = 'visa';
+            $transaction->card_last_4 = '4242';
+            $transaction->save();
+            (new \FluentCart\App\Helpers\StatusHelper($order))->syncOrderStatuses($transaction);
+            $cart = \FluentCart\App\Models\Cart::query()->where('order_id', $order->id)->where('stage', '!=', 'completed')->first();
+            if ($cart) {
+                $cart->stage = 'completed';
+                $cart->completed_at = current_time('mysql');
+                $cart->save();
+            }
+            return ['status' => 'success', 'message' => 'Payment received', 'redirect_to' => $transaction->getSuccessUrl()];
+        }
+
+        public function getEnqueueScriptSrc($hasSubscription = 'no'): array
+        {
+            return [];
+        }
+    };
+    $args['gatewayManager']->register('demo_card', $card);
+});
+
+add_action('fluent_cart/checkout_embed_payment_method_content', static function ($data) {
+    if (($data['route'] ?? '') !== 'demo_card') {
+        return;
+    }
+    ?>
+    <div class="anypress-card">
+        <label>Card number<input type="text" inputmode="numeric" autocomplete="off" value="4242 4242 4242 4242"></label>
+        <div class="anypress-card__two">
+            <label>Expiry<input type="text" autocomplete="off" value="12 / 30"></label>
+            <label>CVC<input type="text" inputmode="numeric" autocomplete="off" value="123"></label>
+        </div>
+        <p class="anypress-card__note">Demo checkout: any card goes through and nothing is charged.</p>
+    </div>
+    <?php
+});
 
 /** A shortcut in the toolbar on every page, so the demo moves between the shop and the owner's screen in one click. */
 add_action('admin_bar_menu', static function ($bar) {
@@ -239,23 +306,6 @@ add_action('admin_post_anypress_swipe_settings', static function () {
     exit;
 });
 
-add_action('admin_post_anypress_swipe_stripe', static function () {
-    check_admin_referer('anypress_swipe_stripe');
-    if (!current_user_can('manage_options')) {
-        wp_die('Not allowed');
-    }
-    $pk = trim(sanitize_text_field(wp_unslash($_POST['pk'] ?? '')));
-    $sk = trim(sanitize_text_field(wp_unslash($_POST['sk'] ?? '')));
-    $ok = str_starts_with($pk, 'pk_test_') && str_starts_with($sk, 'sk_test_');
-    if ($ok) {
-        update_option('anypress_swipe_stripe', ['pk' => $pk, 'sk' => $sk], false);
-        $stripe = (array) fluent_cart_get_option('fluent_cart_payment_settings_stripe', []);
-        fluent_cart_update_option('fluent_cart_payment_settings_stripe', array_merge($stripe, ['is_active' => 'yes', 'provider' => 'api_keys', 'payment_mode' => 'test', 'checkout_mode' => 'onsite']));
-    }
-    wp_safe_redirect(admin_url('admin.php?page=anypress-swipe&stripe=' . ($ok ? 'on' : 'bad')));
-    exit;
-});
-
 function anypress_swipe_page(): void
 {
     $s = anypress_swipe_settings();
@@ -271,7 +321,7 @@ function anypress_swipe_page(): void
     ?>
     <div class="wrap ap-swipe">
         <style>
-            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#6d4cff;--soft:#f3effd;max-width:1180px}
+            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#6d4cff;--soft:#f3effd;max-width:none;margin-right:20px}
             .ap-swipe h1{display:flex;align-items:center;gap:10px}
             .ap-swipe .pill{font-size:11px;font-weight:600;background:#fff4d6;color:#7a5600;border-radius:99px;padding:3px 10px}
             .ap-swipe .lede{color:var(--muted);max-width:760px;font-size:14px}
@@ -283,7 +333,7 @@ function anypress_swipe_page(): void
             .ap-swipe .stat.hi{background:var(--soft);border-color:#d9cdfb}
             .ap-swipe .hero{background:linear-gradient(135deg,#fbe3ec,#e6dcfb);border-radius:14px;padding:22px 26px;margin:12px 0 18px}.ap-swipe .hero h1{margin:0 0 8px}.ap-swipe .hero .lede{color:#3c3846}
             .ap-swipe .button-primary{background:#111;border-color:#111}.ap-swipe .button-primary:hover,.ap-swipe .button-primary:focus{background:#333;border-color:#333}
-            .ap-swipe .cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}.ap-swipe .cols>*{min-width:0}
+            .ap-swipe .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,26%);gap:16px;align-items:start}.ap-swipe .cols>*{min-width:0}
             @media (max-width:1000px){.ap-swipe .cols{grid-template-columns:minmax(0,1fr)}}
             .ap-swipe td:first-child,.ap-swipe .tag{white-space:nowrap}
             .ap-swipe .card{max-width:none;min-width:0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
@@ -399,24 +449,6 @@ function anypress_swipe_page(): void
                     <p>Opens the checkout with a piece from the shop in the cart. Tick protection above the order summary. The total changes at once, the order and receipt show the line, and the order appears here.</p>
                     <p><a class="button button-primary" href="<?php echo esc_url(anypress_swipe_checkout_url()); ?>">Try the Checkout</a> <a class="button" href="<?php echo esc_url(home_url('/shop/')); ?>">Open the Shop</a></p>
                     <p class="note">Concept preview made for a conversation with Swipe AI. The figures on past orders are sample data; no order is sent to Swipe.</p>
-                </div>
-                <div class="card">
-                    <h2>Pay by Card (Stripe Test Mode)</h2>
-                    <?php $stripe_on = defined('FCT_STRIPE_TEST_SECRET_KEY'); ?>
-                    <?php if (isset($_GET['stripe']) && $_GET['stripe'] === 'bad') : ?><p class="note" style="color:#b32d2e">Those don't look like test keys. Use the pk_test_ and sk_test_ pair from Stripe with Test mode on.</p><?php endif; ?>
-                    <?php if ($stripe_on) : ?>
-                        <p><span class="tag">Stripe on, test mode</span></p>
-                        <p class="note">The checkout now takes cards through Stripe. Use 4242 4242 4242 4242, any future date and any CVC. Payments show in your Stripe dashboard under Test mode.</p>
-                    <?php else : ?>
-                        <p class="note">Paste your Stripe test keys (Stripe, Developers, API keys, with Test mode on). They stay in this demo in your browser and are gone when you close it. Live keys are refused.</p>
-                    <?php endif; ?>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <input type="hidden" name="action" value="anypress_swipe_stripe">
-                        <?php wp_nonce_field('anypress_swipe_stripe'); ?>
-                        <label class="f">Publishable key<input type="text" name="pk" placeholder="pk_test_..." autocomplete="off" value="<?php echo esc_attr($stripe_on ? FCT_STRIPE_TEST_PUBLIC_KEY : ''); ?>"></label>
-                        <label class="f">Secret key<input type="password" name="sk" placeholder="sk_test_..." autocomplete="off"></label>
-                        <?php submit_button($stripe_on ? 'Update Keys' : 'Turn On Card Payments', 'primary', 'submit', false); ?>
-                    </form>
                 </div>
             </div>
         </div>

@@ -16,13 +16,22 @@ if (defined('DB_ENGINE') && DB_ENGINE === 'sqlite') {
     add_filter('query', static fn ($q) => preg_match('/^\s*SELECT\s+(GET|RELEASE)_LOCK\(/i', (string) $q) ? "SELECT '1'" : $q);
 }
 
+// Card payments in the demo: FluentCart's Stripe takes API keys only as constants, so test keys pasted on the Package
+// Protection screen (kept in this browser-only site, never in the demo link) become those constants. Live keys are refused.
+$anypress_swipe_stripe = (array) get_option('anypress_swipe_stripe', []);
+if (str_starts_with((string) ($anypress_swipe_stripe['pk'] ?? ''), 'pk_test_') && str_starts_with((string) ($anypress_swipe_stripe['sk'] ?? ''), 'sk_test_')) {
+    defined('FCT_STRIPE_TEST_PUBLIC_KEY') || define('FCT_STRIPE_TEST_PUBLIC_KEY', $anypress_swipe_stripe['pk']);
+    defined('FCT_STRIPE_TEST_SECRET_KEY') || define('FCT_STRIPE_TEST_SECRET_KEY', $anypress_swipe_stripe['sk']);
+}
+unset($anypress_swipe_stripe);
+
 const ANYPRESS_SWIPE_OPTION = 'anypress_swipe_settings';
 const ANYPRESS_SWIPE_KEY = 'swipe_protection';
 
 /** Swipe AI's own wordmark (white, from swipe.ai), on Swipe's dark chip. */
 function anypress_swipe_logo(int $height = 18): string
 {
-    return '<span class="anypress-swipe-logo" style="display:inline-flex;align-items:center;background:#0f1b33;border-radius:6px;padding:4px 8px;line-height:0;vertical-align:middle"><img src="data:image/png;base64,__SWIPE_WORDMARK__" alt="Swipe" style="height:' . (int) $height . 'px;width:auto"></span>';
+    return '<img class="anypress-swipe-logo" src="data:image/png;base64,__SWIPE_WORDMARK__" alt="Swipe" style="height:' . (int) $height . 'px;width:auto;filter:invert(1);vertical-align:middle">';
 }
 
 /** FluentCart's own one-click checkout for the first thing in the shop that ships, so the demo opens straight on it. */
@@ -43,7 +52,7 @@ function anypress_swipe_settings(): array
         'share' => 50,
         'preticked' => 'no',
         'label' => 'Swipe Package Protection',
-        'pitch' => 'Covers loss, theft and damage in transit. If something goes wrong, Swipe reships or refunds your order.',
+        'pitch' => 'Secure Your Package with Swipe. No More Package Theft.',
     ]);
 }
 
@@ -101,18 +110,15 @@ add_action('fluent_cart/before_order_summary', static function ($data) {
     ?>
     <div class="anypress-swipe" data-anypress-swipe>
         <label class="anypress-swipe__row">
-            <input type="checkbox" class="anypress-swipe__box" <?php checked($on); ?>
-                data-nonce="<?php echo esc_attr(wp_create_nonce('anypress_swipe')); ?>"
-                data-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
-            <span class="anypress-swipe__shield" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg>
-            </span>
+            <span class="anypress-swipe__mark"><?php echo anypress_swipe_logo(16); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?></span>
             <span class="anypress-swipe__text">
-                <strong><?php echo esc_html($s['label']); ?> <span class="anypress-swipe__price"><?php echo esc_html(anypress_swipe_money($price)); ?></span></strong>
+                <strong>Package Protection <span class="anypress-swipe__price"><?php echo esc_html(anypress_swipe_money($price)); ?></span></strong>
                 <span><?php echo esc_html($s['pitch']); ?></span>
             </span>
+            <input type="checkbox" role="switch" class="anypress-swipe__box" aria-label="<?php echo esc_attr($s['label']); ?>" <?php checked($on); ?>
+                data-nonce="<?php echo esc_attr(wp_create_nonce('anypress_swipe')); ?>"
+                data-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
         </label>
-        <p class="anypress-swipe__by"><?php echo anypress_swipe_logo(14); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?> <span>Protected by Swipe AI</span></p>
     </div>
     <?php
 });
@@ -139,14 +145,19 @@ add_action('wp_footer', static function () {
     }
     ?>
     <style>
-        .anypress-swipe{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:12px;padding:14px 16px;margin:0 0 16px;background:color-mix(in srgb,#4f7fd9 5%,transparent)}
-        .anypress-swipe__row{display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0}
-        .anypress-swipe__box{margin-top:4px;width:18px;height:18px;accent-color:#4f7fd9;flex:none}
-        .anypress-swipe__shield{color:#4f7fd9;flex:none;margin-top:1px}
-        .anypress-swipe__text{display:flex;flex-direction:column;gap:2px;font-size:.92em;line-height:1.4}
-        .anypress-swipe__text strong{display:flex;justify-content:space-between;gap:8px;font-size:1.02em}
-        .anypress-swipe__price{font-variant-numeric:tabular-nums;white-space:nowrap}
-        .anypress-swipe__by{display:flex;align-items:center;gap:8px;margin:10px 0 0 30px;font-size:.78em}.anypress-swipe__by span{opacity:.7}
+        .anypress-swipe{border:1px solid #e4e1ec;border-radius:12px;padding:14px 16px;margin:0 0 16px;background:#fff;color:#111}
+        .anypress-swipe__row{display:flex;gap:14px;align-items:center;cursor:pointer;margin:0}
+        .anypress-swipe__mark{flex:none;line-height:0}
+        .anypress-swipe__text{display:flex;flex-direction:column;gap:2px;font-size:.9em;line-height:1.35;flex:1;min-width:0}
+        .anypress-swipe__text strong{display:flex;justify-content:space-between;gap:8px;font-size:1.05em}
+        .anypress-swipe__text>span{color:#555}
+        .anypress-swipe__price{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500}
+        .anypress-swipe .anypress-swipe__box{appearance:none!important;-webkit-appearance:none!important;flex:none;width:44px!important;height:24px!important;min-width:44px;border-radius:99px!important;background:#d4d2da!important;background-image:none!important;position:relative;cursor:pointer;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transition:background .2s}
+        .anypress-swipe .anypress-swipe__box::before{display:none!important}
+        .anypress-swipe .anypress-swipe__box::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
+        .anypress-swipe .anypress-swipe__box:checked{background:#111!important}.anypress-swipe .anypress-swipe__box:checked::after{transform:translateX(20px)}
+        .anypress-swipe__box:focus-visible{outline:2px solid #7b5cff;outline-offset:2px}
+        @media (prefers-reduced-motion:reduce){.anypress-swipe__box,.anypress-swipe__box::after{transition:none}}
         .anypress-swipe.is-busy{opacity:.6;pointer-events:none}
     </style>
     <script>
@@ -195,6 +206,9 @@ function anypress_swipe_orders(): array
     return $rows;
 }
 
+// Stripe Connect's sign-in can't finish inside a browser-only demo, so Stripe takes test API keys pasted in its settings.
+add_filter('fluent_cart/form_disable_stripe_connect', '__return_true');
+
 /** A shortcut in the toolbar on every page, so the demo moves between the shop and the owner's screen in one click. */
 add_action('admin_bar_menu', static function ($bar) {
     if (current_user_can('manage_options')) {
@@ -225,6 +239,23 @@ add_action('admin_post_anypress_swipe_settings', static function () {
     exit;
 });
 
+add_action('admin_post_anypress_swipe_stripe', static function () {
+    check_admin_referer('anypress_swipe_stripe');
+    if (!current_user_can('manage_options')) {
+        wp_die('Not allowed');
+    }
+    $pk = trim(sanitize_text_field(wp_unslash($_POST['pk'] ?? '')));
+    $sk = trim(sanitize_text_field(wp_unslash($_POST['sk'] ?? '')));
+    $ok = str_starts_with($pk, 'pk_test_') && str_starts_with($sk, 'sk_test_');
+    if ($ok) {
+        update_option('anypress_swipe_stripe', ['pk' => $pk, 'sk' => $sk], false);
+        $stripe = (array) fluent_cart_get_option('fluent_cart_payment_settings_stripe', []);
+        fluent_cart_update_option('fluent_cart_payment_settings_stripe', array_merge($stripe, ['is_active' => 'yes', 'provider' => 'api_keys', 'payment_mode' => 'test', 'checkout_mode' => 'onsite']));
+    }
+    wp_safe_redirect(admin_url('admin.php?page=anypress-swipe&stripe=' . ($ok ? 'on' : 'bad')));
+    exit;
+});
+
 function anypress_swipe_page(): void
 {
     $s = anypress_swipe_settings();
@@ -240,7 +271,7 @@ function anypress_swipe_page(): void
     ?>
     <div class="wrap ap-swipe">
         <style>
-            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#4f7fd9;--soft:#f0f4ff;max-width:1180px}
+            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#6d4cff;--soft:#f3effd;max-width:1180px}
             .ap-swipe h1{display:flex;align-items:center;gap:10px}
             .ap-swipe .pill{font-size:11px;font-weight:600;background:#fff4d6;color:#7a5600;border-radius:99px;padding:3px 10px}
             .ap-swipe .lede{color:var(--muted);max-width:760px;font-size:14px}
@@ -249,7 +280,9 @@ function anypress_swipe_page(): void
             .ap-swipe .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
             .ap-swipe .stat b{display:block;font-size:24px;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}
             .ap-swipe .stat span{color:var(--muted);font-size:12px}
-            .ap-swipe .stat.hi{background:var(--soft);border-color:#c9d8ff}
+            .ap-swipe .stat.hi{background:var(--soft);border-color:#d9cdfb}
+            .ap-swipe .hero{background:linear-gradient(135deg,#fbe3ec,#e6dcfb);border-radius:14px;padding:22px 26px;margin:12px 0 18px}.ap-swipe .hero h1{margin:0 0 8px}.ap-swipe .hero .lede{color:#3c3846}
+            .ap-swipe .button-primary{background:#111;border-color:#111}.ap-swipe .button-primary:hover,.ap-swipe .button-primary:focus{background:#333;border-color:#333}
             .ap-swipe .cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}.ap-swipe .cols>*{min-width:0}
             @media (max-width:1000px){.ap-swipe .cols{grid-template-columns:minmax(0,1fr)}}
             .ap-swipe td:first-child,.ap-swipe .tag{white-space:nowrap}
@@ -261,19 +294,21 @@ function anypress_swipe_page(): void
             .ap-swipe td.num,.ap-swipe th.num{text-align:right;font-variant-numeric:tabular-nums}
             .ap-swipe .scroll{max-height:420px;overflow:auto}
             .ap-swipe .tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:600;background:#e7f6ec;color:#1a6b37}
-            .ap-swipe .tag.open{background:#fff4d6;color:#7a5600}.ap-swipe .tag.claim{background:#eef1ff;color:#2a3fb0}.ap-swipe .tag.live{background:#4f7fd9;color:#fff}
+            .ap-swipe .tag.open{background:#fff4d6;color:#7a5600}.ap-swipe .tag.claim{background:#eef1ff;color:#2a3fb0}.ap-swipe .tag.live{background:#6d4cff;color:#fff}
             .ap-swipe .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0;padding:0}
             @media (max-width:900px){.ap-swipe .flow{grid-template-columns:1fr 1fr}}
             .ap-swipe .flow li{list-style:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0}
             .ap-swipe .flow b{display:block;margin-bottom:4px}.ap-swipe .flow span{color:var(--muted);font-size:12px}
             .ap-swipe label.f{display:block;margin:0 0 10px;font-weight:500}
-            .ap-swipe label.f input[type=text],.ap-swipe label.f input[type=number]{width:100%;margin-top:4px}
+            .ap-swipe label.f input[type=text],.ap-swipe label.f input[type=password],.ap-swipe label.f input[type=number]{width:100%;margin-top:4px}
             .ap-swipe .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
             .ap-swipe .note{color:var(--muted);font-size:12px}
         </style>
-        <h1><?php echo anypress_swipe_logo(22); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?> Package Protection <span class="pill">Concept preview with Swipe AI</span></h1>
+        <div class="hero">
+        <h1><?php echo anypress_swipe_logo(22); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?> Package Protection <span class="pill">Concept preview</span></h1>
         <p class="lede">Shoppers add Swipe's protection at checkout for about <?php echo esc_html((string) $s['rate']); ?>% of their cart. If a parcel is lost, stolen or arrives damaged, Swipe handles the claim and reships or refunds. The store keeps <?php echo esc_html((string) $s['share']); ?>% of what shoppers pay, on orders it already ships.</p>
         <p><a class="button button-primary button-hero" href="<?php echo esc_url(anypress_swipe_checkout_url()); ?>">Try the Checkout</a> <a class="button button-hero" href="<?php echo esc_url(home_url('/')); ?>">View the Store</a></p>
+        </div>
         <?php if (isset($_GET['saved'])) : ?><div class="notice notice-success"><p>Settings saved. Try the checkout to see the change.</p></div><?php endif; ?>
 
         <ol class="flow">
@@ -364,6 +399,24 @@ function anypress_swipe_page(): void
                     <p>Opens the checkout with a piece from the shop in the cart. Tick protection above the order summary. The total changes at once, the order and receipt show the line, and the order appears here.</p>
                     <p><a class="button button-primary" href="<?php echo esc_url(anypress_swipe_checkout_url()); ?>">Try the Checkout</a> <a class="button" href="<?php echo esc_url(home_url('/shop/')); ?>">Open the Shop</a></p>
                     <p class="note">Concept preview made for a conversation with Swipe AI. The figures on past orders are sample data; no order is sent to Swipe.</p>
+                </div>
+                <div class="card">
+                    <h2>Pay by Card (Stripe Test Mode)</h2>
+                    <?php $stripe_on = defined('FCT_STRIPE_TEST_SECRET_KEY'); ?>
+                    <?php if (isset($_GET['stripe']) && $_GET['stripe'] === 'bad') : ?><p class="note" style="color:#b32d2e">Those don't look like test keys. Use the pk_test_ and sk_test_ pair from Stripe with Test mode on.</p><?php endif; ?>
+                    <?php if ($stripe_on) : ?>
+                        <p><span class="tag">Stripe on, test mode</span></p>
+                        <p class="note">The checkout now takes cards through Stripe. Use 4242 4242 4242 4242, any future date and any CVC. Payments show in your Stripe dashboard under Test mode.</p>
+                    <?php else : ?>
+                        <p class="note">Paste your Stripe test keys (Stripe, Developers, API keys, with Test mode on). They stay in this demo in your browser and are gone when you close it. Live keys are refused.</p>
+                    <?php endif; ?>
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <input type="hidden" name="action" value="anypress_swipe_stripe">
+                        <?php wp_nonce_field('anypress_swipe_stripe'); ?>
+                        <label class="f">Publishable key<input type="text" name="pk" placeholder="pk_test_..." autocomplete="off" value="<?php echo esc_attr($stripe_on ? FCT_STRIPE_TEST_PUBLIC_KEY : ''); ?>"></label>
+                        <label class="f">Secret key<input type="password" name="sk" placeholder="sk_test_..." autocomplete="off"></label>
+                        <?php submit_button($stripe_on ? 'Update Keys' : 'Turn On Card Payments', 'primary', 'submit', false); ?>
+                    </form>
                 </div>
             </div>
         </div>

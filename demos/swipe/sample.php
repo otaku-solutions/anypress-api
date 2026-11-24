@@ -127,6 +127,14 @@ for ($i = 0; $i < $total; $i++) {
         ]]);
     }
 }
+// Card payments in Stripe test mode: the store runs in test mode and Stripe is set to take its own API keys. The keys
+// themselves are never in the demo; the owner pastes test keys in FluentCart > Settings > Payments > Stripe.
+update_option('fluent_cart_store_settings', array_merge((array) get_option('fluent_cart_store_settings', []), ['order_mode' => 'test']), true);
+fluent_cart_update_option('fluent_cart_payment_settings_stripe', array_merge(
+    \FluentCart\App\Modules\PaymentMethods\StripeGateway\StripeSettingsBase::getDefaults(),
+    ['is_active' => 'no', 'provider' => 'api_keys', 'payment_mode' => 'test', 'checkout_mode' => 'onsite']
+));
+
 foreach (Customer::get() as $c) {
     $c->recountStat();
 }

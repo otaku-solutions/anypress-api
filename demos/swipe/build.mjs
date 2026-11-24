@@ -8,6 +8,7 @@ const base = await (await fetch(`https://raw.githubusercontent.com/otaku-solutio
 const bp = JSON.parse(JSON.stringify(base).replaceAll('/anypress-theme/main/', `/anypress-theme/${THEME}/`));
 bp.meta = { ...(bp.meta || {}), title: 'Thread & Co. with Swipe Package Protection (concept)', description: 'An AnyPress online store (the Aisle kit on FluentCart) with a concept of Swipe AI package protection at checkout. Runs in your browser; nothing is saved or sent.' };
 bp.landingPage = '/';
+bp.features = { ...(bp.features || {}), networking: true }; // FluentCart's Stripe test mode talks to api.stripe.com
 const logo = readFileSync(new URL('swipe-wordmark.b64', here), 'utf8').trim();
 bp.steps.push(
   { step: 'writeFile', path: '/wordpress/wp-content/mu-plugins/swipe-protection.php', data: readFileSync(new URL('swipe-protection.php', here), 'utf8').replace('__SWIPE_WORDMARK__', logo) },

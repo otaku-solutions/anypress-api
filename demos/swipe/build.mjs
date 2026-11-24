@@ -2,12 +2,16 @@
 // commit) with the Swipe package protection concept and six months of orders added.
 // Run: node demos/swipe/build.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 const here = new URL('.', import.meta.url);
 const THEME = '432e81b0f1c556322bd6270585cf5fdce7db426b';
 const base = await (await fetch(`https://raw.githubusercontent.com/otaku-solutions/anypress-theme/${THEME}/demo/aisle/blueprint.json`)).json();
 const bp = JSON.parse(JSON.stringify(base).replaceAll('/anypress-theme/main/', `/anypress-theme/${THEME}/`));
 bp.meta = { ...(bp.meta || {}), title: 'Thread & Co. with Swipe Package Protection (concept)', description: 'An AnyPress online store (the Aisle kit on FluentCart) with a concept of Swipe AI package protection at checkout. Runs in your browser; nothing is saved or sent.' };
 bp.landingPage = '/';
+// The kit's hero photo crops the couple at the shoulders; this one shows them whole (Pexels 6328569, Pexels licence).
+const HERO = execSync('git log -1 --format=%H -- hero.jpg', { cwd: new URL('.', import.meta.url) }).toString().trim();
+for (const st of bp.steps) if (st.step === 'writeFile' && st.path?.endsWith('/demo/aisle/photos/hero.jpg')) st.data.url = `https://raw.githubusercontent.com/otaku-solutions/anypress-api/${HERO}/demos/swipe/hero.jpg`;
 bp.features = { ...(bp.features || {}), networking: true }; // FluentCart's Stripe test mode talks to api.stripe.com
 const logo = readFileSync(new URL('swipe-wordmark.b64', here), 'utf8').trim();
 bp.steps.push(

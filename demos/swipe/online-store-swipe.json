@@ -212,7 +212,7 @@
 			"path": "/wordpress/wp-content/themes/anypress/demo/aisle/photos/hero.jpg",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/otaku-solutions/anypress-theme/432e81b0f1c556322bd6270585cf5fdce7db426b/demo/aisle/photos/hero.jpg"
+				"url": "https://raw.githubusercontent.com/otaku-solutions/anypress-api/4187418d08ed752eadfe354632bd9f384b707900/demos/swipe/hero.jpg"
 			},
 			"progress": {
 				"caption": "Adding the Aisle photos"

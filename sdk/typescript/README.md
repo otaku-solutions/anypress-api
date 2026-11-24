@@ -74,9 +74,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(request: Request) {
   const event = stripe.webhooks.constructEvent(await request.text(), request.headers.get('stripe-signature')!, process.env.STRIPE_WEBHOOK_SECRET!);
   // ...your own work first (your database, your app's access)...
-  const email = event.type === 'customer.subscription.deleted'
-    ? ((await stripe.customers.retrieve(event.data.object.customer as string)) as Stripe.Customer).email ?? undefined
-    : undefined;
+  let email: string | undefined;
+  if (event.type === 'customer.subscription.deleted') {
+    // The cancel carries only the customer id. Keep the id and email in your own database when they pay, because
+    // a deleted Stripe customer no longer has an email.
+    const customer = await stripe.customers.retrieve(event.data.object.customer as string);
+    email = (!customer.deleted && customer.email) || (await emailForStripeCustomer(customer.id)); // your lookup
+  }
   const update = contactUpdateFromStripe(event, { email });
   if (update) await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
   return new Response(null, { status: 200 });
@@ -85,12 +89,12 @@ export async function POST(request: Request) {
 
 | Stripe event | Tags added | Tags taken off |
 |---|---|---|
-| `checkout.session.completed` (paid) | Customer, the plan | Trial, Cancelled |
+| `checkout.session.completed` (paid) or `checkout.session.async_payment_succeeded` | Customer, the plan | Trial, Cancelled |
 | `invoice.paid` | Customer | Cancelled |
 | `customer.subscription.deleted` | Cancelled | Customer, the plan |
 | `charge.refunded` (in full) | Refunded | Customer |
 
-The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. Other events return `null`. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
+The plan is the Stripe object's `metadata.plan` (or pass `plan`); rename any tag with `tags: { customer: 'Paying' }`. Other events, setup-mode checkouts and partial refunds return `null`. Send it to the webhook over https. `sendContactUpdate` throws when FluentCRM doesn't take the update, so Stripe sends the event again. With FluentCRM's "Tag Applied" automation (free on AnyPress stores), adding Customer can start a welcome series.
 
 ## Words used here
 

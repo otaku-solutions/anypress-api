@@ -66,7 +66,7 @@ const list = (...names: (string | undefined)[]): string[] => [...new Set(names.f
  *
  * | Stripe event | Tags added | Tags taken off |
  * |---|---|---|
- * | `checkout.session.completed` (paid) | Customer, the plan | Trial, Cancelled |
+ * | `checkout.session.completed` (paid), `checkout.session.async_payment_succeeded` | Customer, the plan | Trial, Cancelled |
  * | `invoice.paid` | Customer | Cancelled |
  * | `customer.subscription.deleted` | Cancelled | Customer, the plan |
  * | `charge.refunded` (refunded in full) | Refunded | Customer |
@@ -93,9 +93,12 @@ export function contactUpdateFromStripe(event: StripeEventLike, options: Contact
   };
 
   switch (event.type) {
-    case 'checkout.session.completed': {
-      // A session can complete before an async payment (bank debits) clears; wait for the paid one then.
-      if (object.payment_status === 'unpaid') return null;
+    case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded': {
+      // A session can complete before a delayed payment (bank debits) clears: Stripe then sends
+      // async_payment_succeeded when it does. A setup-mode session saves a card and takes no payment.
+      if (object.mode === 'setup') return null;
+      if (event.type === 'checkout.session.completed' && object.payment_status === 'unpaid') return null;
       const details = object.customer_details;
       return update(
         text(child(details, 'email')) ?? text(object.customer_email),
@@ -122,19 +125,36 @@ export interface SendContactUpdateOptions {
   fetch?: typeof fetch;
 }
 
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** FluentCRM's answer: WordPress's JSON envelope, `{ success, data }`, with any error message under `data.message`. */
+function readAnswer(body: unknown): { success: boolean; message?: string } | null {
+  if (!body || typeof body !== 'object' || typeof (body as Obj).success !== 'boolean') return null;
+  const { success, data } = body as { success: boolean; data?: unknown };
+  return { success, message: text(child(data, 'message')) ?? text((body as Obj).message) };
+}
+
 /**
  * Sends a contact update to FluentCRM's incoming webhook. The webhook's address is its secret: keep it on your server.
- * Throws when FluentCRM doesn't take it, so your Stripe webhook handler can answer with an error and Stripe retries.
+ * It must be https (plain http only for a site on this computer), and redirects are refused so the address and the
+ * contact never go anywhere else. Throws unless FluentCRM confirms the update, so your Stripe webhook handler can
+ * answer with an error and Stripe retries.
  */
 export async function sendContactUpdate(webhookUrl: string, update: ContactUpdate, options: SendContactUpdateOptions = {}): Promise<void> {
+  const url = new URL(webhookUrl);
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))) {
+    throw new Error('The FluentCRM webhook address must start with https://.');
+  }
   const send = options.fetch ?? fetch;
-  const response = await send(webhookUrl, {
+  const response = await send(url.href, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify(update),
+    redirect: 'error',
   });
-  const body = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
-  if (!response.ok || body?.success === false) {
-    throw new Error(`FluentCRM did not take the contact update (${response.status}${body?.message ? `: ${body.message}` : ''}).`);
+  const answer = readAnswer(await response.json().catch(() => null));
+  if (!response.ok || answer?.success !== true) {
+    const reason = answer?.message ?? (answer ? '' : 'no answer from FluentCRM; is the plugin on and the address right?');
+    throw new Error(`FluentCRM did not take the contact update (${response.status}${reason ? `: ${reason}` : ''}).`);
   }
 }

@@ -31,8 +31,15 @@ describe('contactUpdateFromStripe', () => {
     });
   });
 
-  it('waits for an unpaid checkout to clear', () => {
-    const event = received('checkout.session.completed', { payment_status: 'unpaid', customer_details: { email: 'ava@anypress.example' } });
+  it('waits for a delayed payment to clear, then tags on async_payment_succeeded', () => {
+    const session = { mode: 'payment', payment_status: 'unpaid', customer_details: { email: 'ava@anypress.example' }, metadata: { plan: 'Pro' } };
+    expect(contactUpdateFromStripe(received('checkout.session.completed', session))).toBeNull();
+    const cleared = received('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' });
+    expect(contactUpdateFromStripe(cleared)).toEqual({ email: 'ava@anypress.example', tags: ['Customer', 'Pro'], detach_tags: ['Trial', 'Cancelled'] });
+  });
+
+  it('leaves a setup-mode checkout (a saved card, no payment) alone', () => {
+    const event = received('checkout.session.completed', { mode: 'setup', payment_status: 'no_payment_required', customer_details: { email: 'ava@anypress.example' } });
     expect(contactUpdateFromStripe(event)).toBeNull();
   });
 
@@ -77,18 +84,29 @@ describe('sendContactUpdate', () => {
   const update = { email: 'ava@anypress.example', tags: ['Customer'] };
 
   it('posts the update as JSON to the webhook address', async () => {
-    const fetch = vi.fn(async () => new Response(JSON.stringify({ success: true }), { status: 200 }));
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ success: true, data: { message: 'Subscriber has been updated' } }), { status: 200 }));
     await sendContactUpdate('https://hub.anypress.example/?fluentcrm=1&route=contact&hash=abc', update, { fetch });
     const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toContain('route=contact');
     expect(init.method).toBe('POST');
+    expect(init.redirect).toBe('error');
     expect(JSON.parse(init.body as string)).toEqual(update);
   });
 
   it('throws when FluentCRM turns it away, so Stripe retries', async () => {
-    const refused = vi.fn(async () => new Response(JSON.stringify({ success: false, message: 'Invalid Webhook Hash' }), { status: 200 }));
+    const refused = vi.fn(async () => new Response(JSON.stringify({ success: false, data: { message: 'Invalid Webhook Hash' } }), { status: 200 }));
     await expect(sendContactUpdate('https://hub.anypress.example/', update, { fetch: refused })).rejects.toThrow(/Invalid Webhook Hash/);
     const down = vi.fn(async () => new Response('Bad Gateway', { status: 502 }));
     await expect(sendContactUpdate('https://hub.anypress.example/', update, { fetch: down })).rejects.toThrow(/502/);
+    const page = vi.fn(async () => new Response('<html>Not Found</html>', { status: 200 }));
+    await expect(sendContactUpdate('https://hub.anypress.example/', update, { fetch: page })).rejects.toThrow(/no answer from FluentCRM/);
+  });
+
+  it('only sends over https, apart from a site on this computer', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ success: true }), { status: 200 }));
+    await expect(sendContactUpdate('http://hub.anypress.example/?hash=abc', update, { fetch })).rejects.toThrow(/https/);
+    expect(fetch).not.toHaveBeenCalled();
+    await sendContactUpdate('http://127.0.0.1:9431/?hash=abc', update, { fetch });
+    expect(fetch).toHaveBeenCalledOnce();
   });
 });

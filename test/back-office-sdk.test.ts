@@ -2,7 +2,7 @@
 // SDK as an app's webhook handler would, turned into FluentCRM incoming-webhook updates.
 import Stripe from 'stripe';
 import { describe, expect, it, vi } from 'vitest';
-import { contactUpdateFromStripe, sendContactUpdate } from '../sdk/typescript/src/index.ts';
+import { contactUpdateFromStripe, sendContactUpdate, tagTimes } from '../sdk/typescript/src/index.ts';
 
 const stripe = new Stripe('sk_test_back_office');
 const SECRET = 'whsec_back_office_test';
@@ -109,11 +109,32 @@ describe('contactUpdateFromStripe', () => {
     expect(contactUpdateFromStripe(partial)).toBeNull();
   });
 
-  it('skips an event older than the last one applied, so a late payment does not undo a cancel', () => {
-    const paid = { ...received('invoice.paid', { customer_email: 'ava@anypress.example' }), created: 1_700_000_000 };
-    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_700_000_100 })).toBeNull();
-    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_700_000_000 })?.tags).toEqual(['Customer']);
-    expect(contactUpdateFromStripe(paid, { lastEventAt: 1_699_999_000 })?.tags).toEqual(['Customer']);
+  it('leaves a tag alone when a newer event already changed it, and still changes the others', () => {
+    const paid = { ...received('checkout.session.completed', { payment_status: 'paid', customer_email: 'ava@anypress.example', metadata: { plan: 'Pro' } }), created: 1_700_000_000 };
+    // A cancel at :100 took off Customer and Pro; the paid checkout from :000 arrives after it.
+    const afterCancel = { Cancelled: 1_700_000_100, Customer: 1_700_000_100, Pro: 1_700_000_100 };
+    expect(contactUpdateFromStripe(paid, { tagsChangedAt: afterCancel })).toEqual({
+      email: 'ava@anypress.example',
+      detach_tags: ['Trial', 'Trial Ending', 'Checkout Abandoned'],
+    });
+    // A newer failed payment touched only Payment Failed, so the older paid checkout still adds Customer and the plan.
+    expect(contactUpdateFromStripe(paid, { tagsChangedAt: { 'Payment Failed': 1_700_000_100 } })?.tags).toEqual(['Customer', 'Pro']);
+    // Same second or newer applies.
+    expect(contactUpdateFromStripe(paid, { tagsChangedAt: { Customer: 1_700_000_000 } })?.tags).toEqual(['Customer', 'Pro']);
+    // Everything it would change was changed later: nothing to send.
+    const failed = { ...received('invoice.payment_failed', { customer_email: 'ava@anypress.example' }), created: 1_700_000_000 };
+    expect(contactUpdateFromStripe(failed, { tagsChangedAt: { 'Payment Failed': 1_700_000_100 } })).toBeNull();
+  });
+
+  it('tagTimes records the event time for every tag an update changed, keeping newer ones', () => {
+    const update = { email: 'ava@anypress.example', tags: ['Customer'], detach_tags: ['Trial'] };
+    expect(tagTimes(update, 200, { Trial: 300, Disputed: 50 })).toEqual({ Customer: 200, Trial: 300, Disputed: 50 });
+  });
+
+  it('a first plan on a subscription is added', () => {
+    const first = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: { plan: 'Pro' } });
+    (first.data as { previous_attributes?: object }).previous_attributes = { metadata: {} };
+    expect(contactUpdateFromStripe(first, { email: 'ava@anypress.example' })).toEqual({ email: 'ava@anypress.example', tags: ['Pro'] });
   });
 
   it('uses the tag names and plan it is given, and ignores other events', () => {

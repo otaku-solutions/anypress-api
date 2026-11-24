@@ -62,11 +62,13 @@ export interface ContactUpdateOptions {
    */
   email?: string;
   /**
-   * The `created` time (Unix seconds) of the last event you applied for this customer. Stripe doesn't promise to send
-   * events in order, and retries a failed one later, so an older event (say a payment, after the cancel) returns `null`
-   * instead of undoing a newer one. Keep `event.created` with the customer in your own database after each update.
+   * When each of this customer's tags was last added or taken off: the event's `created` time (Unix seconds), by tag
+   * name. Stripe doesn't promise to send events in order, and retries a failed one later, so a tag an older event
+   * would change (say Customer, from a payment that arrives after the cancel) is left alone instead of undoing the
+   * newer change. Tags the newer events didn't touch still change. After each update, save `event.created` for every
+   * tag in its `tags` and `detach_tags` (`tagTimes()` does this).
    */
-  lastEventAt?: number;
+  tagsChangedAt?: Record<string, number>;
 }
 
 /** The body FluentCRM's incoming webhook takes. */
@@ -116,11 +118,15 @@ function paidCheckout({ object, tags, plan }: Context, completed: boolean): Chan
   };
 }
 
-/** A plan change: the old plan's name is in previous_attributes.metadata. A plan taken off just loses its tag. */
+/**
+ * A plan change: Stripe puts the old metadata in previous_attributes.metadata. A first plan (no old one) is added, and
+ * a plan taken off just loses its tag.
+ */
 function planSwap(previous: Obj, plan?: string): [string[], string[]] {
+  if (!('metadata' in previous)) return [[], []];
   const oldPlan = text(child(previous.metadata, 'plan'));
-  if (!oldPlan || oldPlan === plan) return [[], []];
-  return [plan ? [plan] : [], [oldPlan]];
+  if (oldPlan === plan) return [[], []];
+  return [plan ? [plan] : [], oldPlan ? [oldPlan] : []];
 }
 
 /** A status change: late payments add Past Due, and an active subscription clears it. */
@@ -176,7 +182,6 @@ const HANDLERS: Record<string, (context: Context) => Change | null> = {
  * | `charge.dispute.created` | Disputed | |
  */
 export function contactUpdateFromStripe(event: StripeEventLike, options: ContactUpdateOptions = {}): ContactUpdate | null {
-  if (options.lastEventAt !== undefined && event.created !== undefined && event.created < options.lastEventAt) return null;
   const object = event.data.object as Obj;
   const context: Context = {
     object,
@@ -186,6 +191,11 @@ export function contactUpdateFromStripe(event: StripeEventLike, options: Contact
   };
   const change = HANDLERS[event.type]?.(context);
   if (!change) return null;
+  // A tag a newer event already changed stays as that event left it.
+  const current = (tag: string) => event.created === undefined || event.created >= (options.tagsChangedAt?.[tag] ?? -Infinity);
+  change.add = change.add.filter(current);
+  change.remove = change.remove.filter(current);
+  if (change.add.length === 0 && change.remove.length === 0) return null;
 
   const address = text(options.email) ?? change.email;
   if (!address) {
@@ -201,6 +211,16 @@ export function contactUpdateFromStripe(event: StripeEventLike, options: Contact
   if (change.add.length > 0) result.tags = change.add;
   if (change.remove.length > 0) result.detach_tags = change.remove;
   return result;
+}
+
+/**
+ * The times to save after sending an update: `created` for every tag it adds or takes off, merged into the customer's
+ * `tagsChangedAt`.
+ */
+export function tagTimes(update: ContactUpdate, created: number, tagsChangedAt: Record<string, number> = {}): Record<string, number> {
+  const times = { ...tagsChangedAt };
+  for (const tag of [...(update.tags ?? []), ...(update.detach_tags ?? [])]) times[tag] = Math.max(created, times[tag] ?? created);
+  return times;
 }
 
 export interface SendContactUpdateOptions {

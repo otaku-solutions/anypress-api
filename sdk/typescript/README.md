@@ -66,7 +66,7 @@ A Back Office store holds the contacts, emails and support desk behind a site or
 
 ```ts
 import Stripe from 'stripe';
-import { contactUpdateFromStripe, sendContactUpdate } from 'waas-provisioning-sdk';
+import { contactUpdateFromStripe, sendContactUpdate, tagTimes } from 'waas-provisioning-sdk';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -95,14 +95,18 @@ export async function POST(request: Request) {
       break;
     }
   }
-  // Stripe doesn't promise to send events in order, and retries a failed one later: pass the `created` time of the last
-  // event you applied to this customer, and an older one returns null instead of undoing it.
-  const lastEventAt = await lastStripeEventAt(event); // your database, by Stripe customer id or email
-  const update = contactUpdateFromStripe(event, { email, lastEventAt });
-  if (update) {
+  // Stripe doesn't promise to send events in order, and retries a failed one later. Keep when each of the customer's
+  // tags last changed, and a tag a newer event already changed is left alone. Handle one customer's events one at a
+  // time (a lock or a queue per customer), so two at once can't read the same times and overwrite each other.
+  const address = email ?? contactUpdateFromStripe(event)?.email; // checkouts, invoices and refunds carry their own
+  if (!address) return new Response(null, { status: 200 });
+  await withCustomerLock(address, async () => {
+    const tagsChangedAt = await loadTagTimes(address); // your database
+    const update = contactUpdateFromStripe(event, { email: address, tagsChangedAt });
+    if (!update) return;
     await sendContactUpdate(process.env.FLUENTCRM_WEBHOOK_URL!, update);
-    await saveStripeEventAt(event, event.created); // your database
-  }
+    await saveTagTimes(address, tagTimes(update, event.created, tagsChangedAt)); // your database
+  });
   return new Response(null, { status: 200 });
 }
 ```

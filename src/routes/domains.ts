@@ -14,7 +14,7 @@ import {
   renewAtStorefront,
   transferCode,
 } from "../domainsales.ts";
-import { domainInUse, findTenant, normalizeDomain } from "../tenants.ts";
+import { domainAnswered, domainInUse, findTenant, isBrandStoreName, normalizeDomain } from "../tenants.ts";
 
 interface AddDomainParams {
   domainName: string;
@@ -48,13 +48,15 @@ async function applyDomains(
 
 /**
  * Adds a domain to the tenant (a no-op when it already has it), optionally making it the main one.
- * Shared by addTenantDomain and the admin dashboard's change of a store's address.
+ * Shared by addTenantDomain and the admin dashboard's change of a store's address. `brandNames`
+ * (the platform admin only) lets a store take a name under the brand domain, such as community.anypress.io.
  */
 export async function addTenantDomain(
   deps: Deps,
   tenant: any,
   domainName: string,
   setAsMain: boolean,
+  brandNames = false,
 ) {
   const { pool, config } = deps;
   const domain = normalizeDomain(domainName);
@@ -63,10 +65,11 @@ export async function addTenantDomain(
     [tenant.id, domain],
   );
   const existing = rows[0];
-  if (
-    !existing &&
-    (await domainInUse(pool, domain, config.platformDomain, config.brandDomain))
-  )
+  const taken =
+    brandNames && isBrandStoreName(domain, config.brandDomain)
+      ? domainAnswered(pool, domain)
+      : domainInUse(pool, domain, config.platformDomain, config.brandDomain);
+  if (!existing && (await taken))
     throw badRequest(`Domain ${domain} is already in use`);
 
   if (!existing || setAsMain) {

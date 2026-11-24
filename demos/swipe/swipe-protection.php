@@ -10,6 +10,12 @@
 
 defined('ABSPATH') || exit;
 
+// WordPress Playground runs on SQLite, which has no GET_LOCK(): FluentCart's checkout rate limiter then reads every
+// order as "too many requests". In the browser demo only, the lock always succeeds so a visitor can place an order.
+if (defined('DB_ENGINE') && DB_ENGINE === 'sqlite') {
+    add_filter('query', static fn ($q) => preg_match('/^\s*SELECT\s+(GET|RELEASE)_LOCK\(/i', (string) $q) ? "SELECT '1'" : $q);
+}
+
 const ANYPRESS_SWIPE_OPTION = 'anypress_swipe_settings';
 const ANYPRESS_SWIPE_KEY = 'swipe_protection';
 
@@ -216,14 +222,16 @@ function anypress_swipe_page(): void
             .ap-swipe h1{display:flex;align-items:center;gap:10px}
             .ap-swipe .pill{font-size:11px;font-weight:600;background:#fff4d6;color:#7a5600;border-radius:99px;padding:3px 10px}
             .ap-swipe .lede{color:var(--muted);max-width:760px;font-size:14px}
-            .ap-swipe .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:18px 0}
+            .ap-swipe .grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:18px 0}
+            @media (max-width:1400px){.ap-swipe .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
             .ap-swipe .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
             .ap-swipe .stat b{display:block;font-size:24px;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}
             .ap-swipe .stat span{color:var(--muted);font-size:12px}
             .ap-swipe .stat.hi{background:var(--soft);border-color:#c9d8ff}
-            .ap-swipe .cols{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
-            @media (max-width:1100px){.ap-swipe .cols{grid-template-columns:1fr}}
-            .ap-swipe .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+            .ap-swipe .cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}.ap-swipe .cols>*{min-width:0}
+            @media (max-width:1000px){.ap-swipe .cols{grid-template-columns:minmax(0,1fr)}}
+            .ap-swipe td:first-child,.ap-swipe .tag{white-space:nowrap}
+            .ap-swipe .card{max-width:none;min-width:0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
             .ap-swipe .card h2{margin:0 0 10px;font-size:15px}
             .ap-swipe table{width:100%;border-collapse:collapse;font-size:13px}
             .ap-swipe th{text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--line);padding:6px 8px}
@@ -232,7 +240,7 @@ function anypress_swipe_page(): void
             .ap-swipe .scroll{max-height:420px;overflow:auto}
             .ap-swipe .tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:600;background:#e7f6ec;color:#1a6b37}
             .ap-swipe .tag.open{background:#fff4d6;color:#7a5600}.ap-swipe .tag.claim{background:#eef1ff;color:#2a3fb0}.ap-swipe .tag.live{background:#2f6df6;color:#fff}
-            .ap-swipe .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0}
+            .ap-swipe .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0;padding:0}
             @media (max-width:900px){.ap-swipe .flow{grid-template-columns:1fr 1fr}}
             .ap-swipe .flow li{list-style:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0}
             .ap-swipe .flow b{display:block;margin-bottom:4px}.ap-swipe .flow span{color:var(--muted);font-size:12px}
@@ -267,12 +275,12 @@ function anypress_swipe_page(): void
                     <h2>Protected Orders</h2>
                     <div class="scroll">
                         <table>
-                            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th class="num">Order</th><th class="num">Protection</th><th class="num">Store's share</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th class="num">Total</th><th class="num">Protection</th><th class="num">Store's share</th><th>Status</th></tr></thead>
                             <tbody>
                             <?php foreach ($rows as $r) :
                                 $o = $r['order'];
                                 $claim = $r['claim'];
-                                $status = $claim ? ($claim['status'] === 'Open' ? 'Claim open' : 'Claim ' . strtolower($claim['status'])) : ($r['live'] ? 'New, just placed' : 'Protected');
+                                $status = $claim ? ($claim['status'] === 'Open' ? 'Claim open' : 'Claim ' . strtolower($claim['status'])) : ($r['live'] ? 'New' : 'Protected');
                                 $cls = $claim ? ($claim['status'] === 'Open' ? 'open' : 'claim') : ($r['live'] ? 'live' : '');
                                 ?>
                                 <tr>

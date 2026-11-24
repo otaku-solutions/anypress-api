@@ -7,6 +7,28 @@ require '/wordpress/wp-load.php';
 wp_set_current_user(1);
 
 use FluentCart\App\Models\Order;
+use FluentCart\App\Modules\PaymentMethods\Core\GatewayManager;
+
+// So a visitor can place a real order in the demo: FluentCart's own Cash on Delivery, switched on as its Payments
+// screen does. Nothing is charged.
+if (GatewayManager::has('offline_payment')) {
+    GatewayManager::getInstance('offline_payment')->updateSettings(['is_active' => 'yes']);
+}
+
+// Shipping, so the checkout offers delivery (the shop part's own setup doesn't always finish in the browser): the
+// same zone and methods, through FluentCart's own admin routes, when there is none yet.
+$api = static function (string $route, array $body) {
+    $r = new WP_REST_Request('POST', $route);
+    $r->set_header('content-type', 'application/json');
+    $r->set_body((string) wp_json_encode($body));
+    return rest_do_request($r)->get_data();
+};
+if (!\FluentCart\App\Models\ShippingZone::query()->count()) {
+    $zoneId = (int) ($api('/fluent-cart/v2/shipping/zones', ['name' => 'United States', 'region' => 'US'])['shipping_zone']['id'] ?? 0);
+    foreach ($zoneId ? [['Standard (3 to 5 days)', 'flat_rate', '8'], ['Express (1 to 2 days)', 'flat_rate', '18'], ['Pick up from the studio', 'local_pickup', '0']] : [] as [$title, $kind, $amount]) {
+        $api('/fluent-cart/v2/shipping/methods', ['zone_id' => $zoneId, 'title' => $title, 'type' => $kind, 'amount' => $amount, 'settings' => ['configure_rate' => 'per_order'], 'is_enabled' => 1]);
+    }
+}
 
 $orders = Order::query()->with('order_items')->whereIn('payment_status', ['paid', 'partially_refunded'])->orderBy('id')->get();
 $n = 0;

@@ -217,6 +217,14 @@ describe('admin endpoints', () => {
     // Nor can it pick the brand name the admin already put on its store.
     const reselect = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'community.brand.example', setAsMainDomain: true } });
     expect(reselect.status).toBe(400);
+    // Once another name is main, the storefront can switch between its own names but not back to the brand name.
+    await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 200, { domainName: 'own-community.example' });
+    const back = await t.call('PUT', `/v1/tenants/domains/main?externalId=${own.externalId}`, { body: { domainName: 'community.brand.example' } });
+    expect(back.status).toBe(400);
+    const own2 = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'own-community-2.example' } });
+    expect(own2.status).toBeLessThan(300);
+    const ordinary = await t.call('PUT', `/v1/tenants/domains/main?externalId=${own.externalId}`, { body: { domainName: 'own-community-2.example' } });
+    expect(ordinary.status).toBe(200);
   });
 
   it('backups: includes a deleted tenant\'s, with expiresAt', async () => {

@@ -199,6 +199,9 @@ export function domainRoutes(deps: Deps) {
       await readJson(c),
     );
     const domain = await findDomain(tenant.id, body.domainId, body.domainName);
+    // A name under the brand domain is the platform admin's to choose (admin.ts), even once it is on the store.
+    if (!domain.is_main && isReservedDomain(domain.domain_name, config.platformDomain, config.brandDomain))
+      throw badRequest(`Domain ${domain.domain_name} is already in use`);
     if (!domain.is_main) {
       await applyDomains(deps, tenant.id, async (client) => {
         await client.query(

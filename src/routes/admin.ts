@@ -401,8 +401,9 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
       pool.query(
         `SELECT p.id, p.name, count(t.id)::int AS tenant_count
            FROM products p LEFT JOIN tenants t ON t.product_id = p.id
-          WHERE ($1::uuid IS NULL OR p.id = $1) GROUP BY p.id ORDER BY p.name`,
-        [own],
+          WHERE ($1::uuid IS NULL OR p.id = $1) AND ($2::uuid IS NULL OR p.id <> $2) GROUP BY p.id ORDER BY p.name`,
+        // The seller storefront template's product is a template, not a shop: it is on Templates, not in the switcher.
+        [own, own ? null : (config.storefrontProductId ?? null)],
       ),
     ]);
     const marks = await productMarks(pool, publicBase(c, config.publicUrl), products.rows.map((p) => p.id as string));
@@ -1065,6 +1066,7 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
       followsProductId: p.follows_product_id,
       highlevelAgency: p.highlevel_agency,
       cleanDashboard: p.clean_dashboard,
+      storefrontTemplate: p.id === config.storefrontProductId,
       dateCreated: iso(p.created_at),
     }));
   }

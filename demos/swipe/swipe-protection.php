@@ -19,6 +19,20 @@ if (defined('DB_ENGINE') && DB_ENGINE === 'sqlite') {
 const ANYPRESS_SWIPE_OPTION = 'anypress_swipe_settings';
 const ANYPRESS_SWIPE_KEY = 'swipe_protection';
 
+/** Swipe AI's own wordmark (white, from swipe.ai), on Swipe's dark chip. */
+function anypress_swipe_logo(int $height = 18): string
+{
+    return '<span class="anypress-swipe-logo" style="display:inline-flex;align-items:center;background:#0f1b33;border-radius:6px;padding:4px 8px;line-height:0;vertical-align:middle"><img src="data:image/png;base64,__SWIPE_WORDMARK__" alt="Swipe" style="height:' . (int) $height . 'px;width:auto"></span>';
+}
+
+/** FluentCart's own one-click checkout for the first thing in the shop that ships, so the demo opens straight on it. */
+function anypress_swipe_checkout_url(): string
+{
+    $v = class_exists('\FluentCart\App\Models\ProductVariation') ? \FluentCart\App\Models\ProductVariation::query()
+        ->where('fulfillment_type', 'physical')->where('stock_status', 'in-stock')->where('item_price', '>', 2000)->orderBy('id')->first() : null;
+    return $v ? add_query_arg(['fluent-cart' => 'instant_checkout', 'item_id' => (int) $v->id, 'quantity' => 1], home_url('/')) : home_url('/shop/');
+}
+
 /** The store's protection settings, with Swipe's own figures (about 3% of the cart, half the premium to the store). */
 function anypress_swipe_settings(): array
 {
@@ -98,7 +112,7 @@ add_action('fluent_cart/before_order_summary', static function ($data) {
                 <span><?php echo esc_html($s['pitch']); ?></span>
             </span>
         </label>
-        <p class="anypress-swipe__by">Protection by Swipe AI · <a href="https://swipe.ai" target="_blank" rel="noopener">How it works</a></p>
+        <p class="anypress-swipe__by"><?php echo anypress_swipe_logo(14); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?> <span>Protected by Swipe AI</span></p>
     </div>
     <?php
 });
@@ -125,14 +139,14 @@ add_action('wp_footer', static function () {
     }
     ?>
     <style>
-        .anypress-swipe{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:12px;padding:14px 16px;margin:0 0 16px;background:color-mix(in srgb,#2f6df6 5%,transparent)}
+        .anypress-swipe{border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:12px;padding:14px 16px;margin:0 0 16px;background:color-mix(in srgb,#4f7fd9 5%,transparent)}
         .anypress-swipe__row{display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0}
-        .anypress-swipe__box{margin-top:4px;width:18px;height:18px;accent-color:#2f6df6;flex:none}
-        .anypress-swipe__shield{color:#2f6df6;flex:none;margin-top:1px}
+        .anypress-swipe__box{margin-top:4px;width:18px;height:18px;accent-color:#4f7fd9;flex:none}
+        .anypress-swipe__shield{color:#4f7fd9;flex:none;margin-top:1px}
         .anypress-swipe__text{display:flex;flex-direction:column;gap:2px;font-size:.92em;line-height:1.4}
         .anypress-swipe__text strong{display:flex;justify-content:space-between;gap:8px;font-size:1.02em}
         .anypress-swipe__price{font-variant-numeric:tabular-nums;white-space:nowrap}
-        .anypress-swipe__by{margin:8px 0 0 30px;font-size:.78em;opacity:.7}
+        .anypress-swipe__by{display:flex;align-items:center;gap:8px;margin:10px 0 0 30px;font-size:.78em}.anypress-swipe__by span{opacity:.7}
         .anypress-swipe.is-busy{opacity:.6;pointer-events:none}
     </style>
     <script>
@@ -175,11 +189,19 @@ function anypress_swipe_orders(): array
             'order' => $order,
             'premium' => $premium ?: (int) $meta['premium'],
             'claim' => $meta['claim'] ?? null,
-            'live' => $premium > 0,
+            'live' => $order->payment_status !== 'paid' || strtotime((string) $order->created_at) > time() - 2 * DAY_IN_SECONDS,
         ];
     }
     return $rows;
 }
+
+/** A shortcut in the toolbar on every page, so the demo moves between the shop and the owner's screen in one click. */
+add_action('admin_bar_menu', static function ($bar) {
+    if (current_user_can('manage_options')) {
+        $bar->add_node(['id' => 'anypress-swipe', 'title' => 'Swipe Protection', 'href' => admin_url('admin.php?page=anypress-swipe')]);
+        $bar->add_node(['id' => 'anypress-swipe-checkout', 'parent' => 'anypress-swipe', 'title' => 'Try the Checkout', 'href' => anypress_swipe_checkout_url()]);
+    }
+}, 80);
 
 add_action('admin_menu', static function () {
     add_submenu_page('fluent-cart', 'Package Protection', 'Package Protection', 'manage_options', 'anypress-swipe', 'anypress_swipe_page', 30);
@@ -218,7 +240,7 @@ function anypress_swipe_page(): void
     ?>
     <div class="wrap ap-swipe">
         <style>
-            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#2f6df6;--soft:#f0f4ff;max-width:1180px}
+            .ap-swipe{--ink:#1d2327;--muted:#646970;--line:#dcdcde;--blue:#4f7fd9;--soft:#f0f4ff;max-width:1180px}
             .ap-swipe h1{display:flex;align-items:center;gap:10px}
             .ap-swipe .pill{font-size:11px;font-weight:600;background:#fff4d6;color:#7a5600;border-radius:99px;padding:3px 10px}
             .ap-swipe .lede{color:var(--muted);max-width:760px;font-size:14px}
@@ -239,7 +261,7 @@ function anypress_swipe_page(): void
             .ap-swipe td.num,.ap-swipe th.num{text-align:right;font-variant-numeric:tabular-nums}
             .ap-swipe .scroll{max-height:420px;overflow:auto}
             .ap-swipe .tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:600;background:#e7f6ec;color:#1a6b37}
-            .ap-swipe .tag.open{background:#fff4d6;color:#7a5600}.ap-swipe .tag.claim{background:#eef1ff;color:#2a3fb0}.ap-swipe .tag.live{background:#2f6df6;color:#fff}
+            .ap-swipe .tag.open{background:#fff4d6;color:#7a5600}.ap-swipe .tag.claim{background:#eef1ff;color:#2a3fb0}.ap-swipe .tag.live{background:#4f7fd9;color:#fff}
             .ap-swipe .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0;padding:0}
             @media (max-width:900px){.ap-swipe .flow{grid-template-columns:1fr 1fr}}
             .ap-swipe .flow li{list-style:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0}
@@ -249,8 +271,9 @@ function anypress_swipe_page(): void
             .ap-swipe .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
             .ap-swipe .note{color:var(--muted);font-size:12px}
         </style>
-        <h1>Package Protection <span class="pill">Concept preview with Swipe AI</span></h1>
+        <h1><?php echo anypress_swipe_logo(22); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup ?> Package Protection <span class="pill">Concept preview with Swipe AI</span></h1>
         <p class="lede">Shoppers add Swipe's protection at checkout for about <?php echo esc_html((string) $s['rate']); ?>% of their cart. If a parcel is lost, stolen or arrives damaged, Swipe handles the claim and reships or refunds. The store keeps <?php echo esc_html((string) $s['share']); ?>% of what shoppers pay, on orders it already ships.</p>
+        <p><a class="button button-primary button-hero" href="<?php echo esc_url(anypress_swipe_checkout_url()); ?>">Try the Checkout</a> <a class="button button-hero" href="<?php echo esc_url(home_url('/')); ?>">View the Store</a></p>
         <?php if (isset($_GET['saved'])) : ?><div class="notice notice-success"><p>Settings saved. Try the checkout to see the change.</p></div><?php endif; ?>
 
         <ol class="flow">
@@ -338,8 +361,8 @@ function anypress_swipe_page(): void
                 </form>
                 <div class="card">
                     <h2>Try It</h2>
-                    <p>Add a product to the cart, open the checkout and tick protection. The total changes at once, the order and receipt show the line, and the order appears here.</p>
-                    <p><a class="button" href="<?php echo esc_url(home_url('/shop/')); ?>" target="_blank">Open the shop</a></p>
+                    <p>Opens the checkout with a piece from the shop in the cart. Tick protection above the order summary. The total changes at once, the order and receipt show the line, and the order appears here.</p>
+                    <p><a class="button button-primary" href="<?php echo esc_url(anypress_swipe_checkout_url()); ?>">Try the Checkout</a> <a class="button" href="<?php echo esc_url(home_url('/shop/')); ?>">Open the Shop</a></p>
                     <p class="note">Concept preview made for a conversation with Swipe AI. The figures on past orders are sample data; no order is sent to Swipe.</p>
                 </div>
             </div>

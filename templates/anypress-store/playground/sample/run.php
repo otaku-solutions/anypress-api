@@ -167,9 +167,11 @@ function anypress_sample_mail_at(?string $when = null): void
     $seen = $newest;
 }
 
-// Playground keeps the demo in SQLite, which has neither JSON_UNQUOTE nor JSON_MERGE_PATCH. FluentCart counts a
-// customer's orders and spend with the first when an order is paid (SQLite's own json_extract already answers unquoted
-// text, so it passes the value on), and keeps a product's review count with the second each time its page opens.
+// Playground keeps the demo in SQLite, which has neither JSON_UNQUOTE nor JSON_MERGE_PATCH, nor GET_LOCK and
+// RELEASE_LOCK. FluentCart counts a customer's orders and spend with the first when an order is paid (SQLite's own
+// json_extract already answers unquoted text, so it passes the value on), and keeps a product's review count with the
+// second each time its page opens. Its checkout takes a named lock before each order (its rate limiter), and reads a
+// lock it can't get as too many requests: Playground has one visitor, so every lock is theirs.
 $sqlite = <<<'PHP'
 <?php
 if (isset($GLOBALS['wpdb']->dbh) && $GLOBALS['wpdb']->dbh instanceof WP_MySQL_On_SQLite) {
@@ -192,6 +194,8 @@ if (isset($GLOBALS['wpdb']->dbh) && $GLOBALS['wpdb']->dbh instanceof WP_MySQL_On
         };
         return wp_json_encode($merge(json_decode((string) $target, true), json_decode((string) $patch, true)));
     }, 2);
+    $pdo->sqliteCreateFunction('get_lock', static fn ($name, $timeout = 0) => 1);
+    $pdo->sqliteCreateFunction('release_lock', static fn ($name) => 1, 1);
 }
 PHP;
 file_put_contents(WPMU_PLUGIN_DIR . '/anypress-sample-sqlite.php', $sqlite);

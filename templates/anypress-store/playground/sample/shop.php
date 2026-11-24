@@ -161,7 +161,9 @@ foreach ([[1, 3], [4, 0]] as [$n, $left]) {
 }
 
 // Shipping across the US (standard, express and pick-up) and sales tax, as a shop sets them up before launch.
-[, $zone] = anypress_sample_api('POST', '/fluent-cart/v2/shipping/zones', ['name' => 'United States', 'region' => 'US']);
+// The zone's place in the list is sent as its screen sends it: FluentCart's request object keeps the fields of the order
+// routes above in this one PHP run, and would check their 'order' as the zone's.
+[, $zone] = anypress_sample_api('POST', '/fluent-cart/v2/shipping/zones', ['name' => 'United States', 'region' => 'US', 'order' => 0]);
 $zoneId = (int) ($zone['shipping_zone']['id'] ?? 0);
 foreach ($zoneId ? [['Standard (3 to 5 days)', 'flat_rate', '8'], ['Express (1 to 2 days)', 'flat_rate', '18'], ['Pick up from the studio', 'local_pickup', '0']] : [] as [$title, $kind, $amount]) {
     anypress_sample_api('POST', '/fluent-cart/v2/shipping/methods', ['zone_id' => $zoneId, 'title' => $title, 'type' => $kind, 'amount' => $amount, 'settings' => ['configure_rate' => 'per_order'], 'is_enabled' => 1]);

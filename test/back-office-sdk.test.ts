@@ -15,7 +15,7 @@ function received(type: string, object: object): Stripe.Event {
 }
 
 describe('contactUpdateFromStripe', () => {
-  it('a paid checkout adds Customer and the plan, and takes off Trial and Cancelled', () => {
+  it('a paid checkout adds Customer and the plan, and takes off the trial, cancelled and abandoned tags', () => {
     const event = received('checkout.session.completed', {
       object: 'checkout.session',
       payment_status: 'paid',
@@ -27,7 +27,7 @@ describe('contactUpdateFromStripe', () => {
       first_name: 'Ava',
       last_name: 'Reyes',
       tags: ['Customer', 'Pro'],
-      detach_tags: ['Trial', 'Cancelled'],
+      detach_tags: ['Trial', 'Trial Ending', 'Cancelled', 'Checkout Abandoned'],
     });
   });
 
@@ -35,7 +35,7 @@ describe('contactUpdateFromStripe', () => {
     const session = { mode: 'payment', payment_status: 'unpaid', customer_details: { email: 'ava@anypress.example' }, metadata: { plan: 'Pro' } };
     expect(contactUpdateFromStripe(received('checkout.session.completed', session))).toBeNull();
     const cleared = received('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' });
-    expect(contactUpdateFromStripe(cleared)).toEqual({ email: 'ava@anypress.example', tags: ['Customer', 'Pro'], detach_tags: ['Trial', 'Cancelled'] });
+    expect(contactUpdateFromStripe(cleared)).toEqual({ email: 'ava@anypress.example', tags: ['Customer', 'Pro'], detach_tags: ['Trial', 'Trial Ending', 'Cancelled', 'Checkout Abandoned'] });
   });
 
   it('leaves a setup-mode checkout (a saved card, no payment) alone', () => {
@@ -43,9 +43,49 @@ describe('contactUpdateFromStripe', () => {
     expect(contactUpdateFromStripe(event)).toBeNull();
   });
 
-  it('a paid invoice keeps Customer and takes off Cancelled', () => {
+  it('a paid invoice keeps Customer and takes off Cancelled, Payment Failed and Past Due; a failed one adds Payment Failed', () => {
     const event = received('invoice.paid', { object: 'invoice', customer_email: 'ava@anypress.example' });
-    expect(contactUpdateFromStripe(event)).toEqual({ email: 'ava@anypress.example', tags: ['Customer'], detach_tags: ['Cancelled'] });
+    expect(contactUpdateFromStripe(event)).toEqual({ email: 'ava@anypress.example', tags: ['Customer'], detach_tags: ['Cancelled', 'Payment Failed', 'Past Due'] });
+    const failed = received('invoice.payment_failed', { object: 'invoice', customer_email: 'ava@anypress.example' });
+    expect(contactUpdateFromStripe(failed)).toEqual({ email: 'ava@anypress.example', tags: ['Payment Failed'] });
+  });
+
+  it('a subscription change swaps the plan tag, and tags Past Due until it is active again', () => {
+    const email = 'ava@anypress.example';
+    const upgrade = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: { plan: 'Team' } });
+    (upgrade.data as { previous_attributes?: object }).previous_attributes = { metadata: { plan: 'Pro' } };
+    expect(contactUpdateFromStripe(upgrade, { email })).toEqual({ email, tags: ['Team'], detach_tags: ['Pro'] });
+
+    const late = received('customer.subscription.updated', { object: 'subscription', status: 'past_due', metadata: { plan: 'Pro' } });
+    (late.data as { previous_attributes?: object }).previous_attributes = { status: 'active' };
+    expect(contactUpdateFromStripe(late, { email })).toEqual({ email, tags: ['Past Due'] });
+
+    const back = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: { plan: 'Pro' } });
+    (back.data as { previous_attributes?: object }).previous_attributes = { status: 'past_due' };
+    expect(contactUpdateFromStripe(back, { email })).toEqual({ email, detach_tags: ['Past Due', 'Payment Failed'] });
+
+    const quiet = received('customer.subscription.updated', { object: 'subscription', status: 'active', metadata: { plan: 'Pro' } });
+    (quiet.data as { previous_attributes?: object }).previous_attributes = { cancel_at_period_end: false };
+    expect(contactUpdateFromStripe(quiet, { email })).toBeNull();
+  });
+
+  it('tags Trial Ending three days before a trial ends, with the email passed in', () => {
+    const event = received('customer.subscription.trial_will_end', { object: 'subscription', customer: 'cus_1', status: 'trialing' });
+    expect(() => contactUpdateFromStripe(event)).toThrow(/options\.email/);
+    expect(contactUpdateFromStripe(event, { email: 'ava@anypress.example' })).toEqual({ email: 'ava@anypress.example', tags: ['Trial Ending'] });
+  });
+
+  it('tags an expired checkout as abandoned when the shopper typed an email, and skips it when they did not', () => {
+    const typed = received('checkout.session.expired', { object: 'checkout.session', mode: 'subscription', customer_details: { email: 'ava@anypress.example' } });
+    expect(contactUpdateFromStripe(typed)).toEqual({ email: 'ava@anypress.example', tags: ['Checkout Abandoned'] });
+    expect(contactUpdateFromStripe(received('checkout.session.expired', { object: 'checkout.session', mode: 'payment' }))).toBeNull();
+    expect(contactUpdateFromStripe(received('checkout.session.expired', { mode: 'setup', customer_email: 'ava@anypress.example' }))).toBeNull();
+  });
+
+  it('tags a dispute, with the email passed in', () => {
+    const event = received('charge.dispute.created', { object: 'dispute', charge: 'ch_1', reason: 'fraudulent' });
+    expect(() => contactUpdateFromStripe(event)).toThrow(/options\.email/);
+    expect(contactUpdateFromStripe(event, { email: 'ava@anypress.example' })).toEqual({ email: 'ava@anypress.example', tags: ['Disputed'] });
   });
 
   it('a cancelled subscription needs the email passed in, then swaps Customer and the plan for Cancelled', () => {
@@ -54,7 +94,7 @@ describe('contactUpdateFromStripe', () => {
     expect(contactUpdateFromStripe(event, { email: 'ava@anypress.example' })).toEqual({
       email: 'ava@anypress.example',
       tags: ['Cancelled'],
-      detach_tags: ['Customer', 'Pro'],
+      detach_tags: ['Customer', 'Pro', 'Past Due'],
     });
   });
 

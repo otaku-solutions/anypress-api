@@ -18,30 +18,45 @@
 /** The parts of a Stripe event this reads. A `Stripe.Event` from the `stripe` package fits. */
 export interface StripeEventLike {
   type: string;
-  data: { object: object };
+  data: { object: object; previous_attributes?: object };
 }
 
 /** The tag names used for each state. Change any to match the tags already in your FluentCRM. */
 export interface BackOfficeTagNames {
   customer: string;
   trial: string;
+  trialEnding: string;
   cancelled: string;
   refunded: string;
+  paymentFailed: string;
+  pastDue: string;
+  checkoutAbandoned: string;
+  disputed: string;
 }
 
-export const DEFAULT_TAG_NAMES: BackOfficeTagNames = { customer: 'Customer', trial: 'Trial', cancelled: 'Cancelled', refunded: 'Refunded' };
+export const DEFAULT_TAG_NAMES: BackOfficeTagNames = {
+  customer: 'Customer',
+  trial: 'Trial',
+  trialEnding: 'Trial Ending',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+  paymentFailed: 'Payment Failed',
+  pastDue: 'Past Due',
+  checkoutAbandoned: 'Checkout Abandoned',
+  disputed: 'Disputed',
+};
 
 export interface ContactUpdateOptions {
   /** Tag names to use instead of the defaults. */
   tags?: Partial<BackOfficeTagNames>;
   /**
    * The plan's name, added as a tag when someone pays and taken off when they cancel. Defaults to the Stripe object's
-   * `metadata.plan`, so setting `metadata: { plan: 'Pro' }` on the Checkout Session or subscription is enough.
+   * `metadata.plan`, so setting `metadata: { plan: 'Pro' }` on the Checkout Session and subscription is enough.
    */
   plan?: string;
   /**
-   * The customer's email, for events that don't carry one (`customer.subscription.deleted` only has the customer id:
-   * look it up with `stripe.customers.retrieve` or in your own database).
+   * The customer's email, for events that don't carry one: the `customer.subscription.*` events and
+   * `charge.dispute.created` only have ids. Look it up in your own database (or with `stripe.customers.retrieve`).
    */
   email?: string;
 }
@@ -61,63 +76,121 @@ const text = (value: unknown): string | undefined => (typeof value === 'string' 
 const child = (value: unknown, key: string): unknown => (value && typeof value === 'object' ? (value as Obj)[key] : undefined);
 const list = (...names: (string | undefined)[]): string[] => [...new Set(names.filter((name): name is string => !!name))];
 
+/** What one event means for the contact; `email` is left out when the event carries none. */
+interface Change {
+  email?: string;
+  name?: string;
+  add: string[];
+  remove: string[];
+  /** Skip the update when the event has no email (rather than throwing), e.g. an expired checkout with no email typed. */
+  optional?: boolean;
+}
+
+interface Context {
+  object: Obj;
+  previous: Obj;
+  tags: BackOfficeTagNames;
+  plan?: string;
+}
+
+const checkoutEmail = (object: Obj) => text(child(object.customer_details, 'email')) ?? text(object.customer_email);
+
+function paidCheckout({ object, tags, plan }: Context, completed: boolean): Change | null {
+  // A session can complete before a delayed payment (bank debits) clears: Stripe then sends
+  // async_payment_succeeded when it does. A setup-mode session saves a card and takes no payment.
+  if (object.mode === 'setup') return null;
+  if (completed && object.payment_status === 'unpaid') return null;
+  return {
+    email: checkoutEmail(object),
+    name: text(child(object.customer_details, 'name')),
+    add: list(tags.customer, plan),
+    remove: list(tags.trial, tags.trialEnding, tags.cancelled, tags.checkoutAbandoned),
+  };
+}
+
+/** A plan change: the old plan's name is in previous_attributes.metadata. */
+function planSwap(previous: Obj, plan?: string): [string[], string[]] {
+  const oldPlan = text(child(previous.metadata, 'plan'));
+  return plan && oldPlan && oldPlan !== plan ? [[plan], [oldPlan]] : [[], []];
+}
+
+/** A status change: late payments add Past Due, and an active subscription clears it. */
+function statusSwap(object: Obj, previous: Obj, tags: BackOfficeTagNames): [string[], string[]] {
+  if (!('status' in previous)) return [[], []];
+  if (object.status === 'past_due' || object.status === 'unpaid') return [[tags.pastDue], []];
+  return object.status === 'active' ? [[], [tags.pastDue, tags.paymentFailed]] : [[], []];
+}
+
+function subscriptionUpdated({ object, previous, tags, plan }: Context): Change | null {
+  const [planAdd, planRemove] = planSwap(previous, plan);
+  const [statusAdd, statusRemove] = statusSwap(object, previous, tags);
+  const add = list(...planAdd, ...statusAdd);
+  const remove = list(...planRemove, ...statusRemove);
+  return add.length > 0 || remove.length > 0 ? { add, remove } : null;
+}
+
+const HANDLERS: Record<string, (context: Context) => Change | null> = {
+  'checkout.session.completed': (c) => paidCheckout(c, true),
+  'checkout.session.async_payment_succeeded': (c) => paidCheckout(c, false),
+  'checkout.session.expired': ({ object, tags }) =>
+    object.mode === 'setup' ? null : { email: checkoutEmail(object), add: [tags.checkoutAbandoned], remove: [], optional: true },
+  'invoice.paid': ({ object, tags }) => ({
+    email: text(object.customer_email),
+    add: [tags.customer],
+    remove: list(tags.cancelled, tags.paymentFailed, tags.pastDue),
+  }),
+  'invoice.payment_failed': ({ object, tags }) => ({ email: text(object.customer_email), add: [tags.paymentFailed], remove: [] }),
+  'customer.subscription.updated': subscriptionUpdated,
+  'customer.subscription.trial_will_end': ({ tags }) => ({ add: [tags.trialEnding], remove: [] }),
+  'customer.subscription.deleted': ({ tags, plan }) => ({ add: [tags.cancelled], remove: list(tags.customer, plan, tags.pastDue) }),
+  // A partial refund leaves the customer a customer.
+  'charge.refunded': ({ object, tags }) =>
+    object.refunded === true
+      ? { email: text(child(object.billing_details, 'email')) ?? text(object.receipt_email), add: [tags.refunded], remove: [tags.customer] }
+      : null,
+  'charge.dispute.created': ({ tags }) => ({ add: [tags.disputed], remove: [] }),
+};
+
 /**
  * Turns a Stripe event into a FluentCRM contact update, or `null` for events that don't change a contact's tags.
  *
  * | Stripe event | Tags added | Tags taken off |
  * |---|---|---|
- * | `checkout.session.completed` (paid), `checkout.session.async_payment_succeeded` | Customer, the plan | Trial, Cancelled |
- * | `invoice.paid` | Customer | Cancelled |
- * | `customer.subscription.deleted` | Cancelled | Customer, the plan |
+ * | `checkout.session.completed` (paid), `checkout.session.async_payment_succeeded` | Customer, the plan | Trial, Trial Ending, Cancelled, Checkout Abandoned |
+ * | `checkout.session.expired` (with an email) | Checkout Abandoned | |
+ * | `invoice.paid` | Customer | Cancelled, Payment Failed, Past Due |
+ * | `invoice.payment_failed` | Payment Failed | |
+ * | `customer.subscription.updated` (plan or status changed) | the new plan; Past Due | the old plan; Past Due and Payment Failed once active |
+ * | `customer.subscription.trial_will_end` | Trial Ending | |
+ * | `customer.subscription.deleted` | Cancelled | Customer, the plan, Past Due |
  * | `charge.refunded` (refunded in full) | Refunded | Customer |
+ * | `charge.dispute.created` | Disputed | |
  */
 export function contactUpdateFromStripe(event: StripeEventLike, options: ContactUpdateOptions = {}): ContactUpdate | null {
-  const tags = { ...DEFAULT_TAG_NAMES, ...options.tags };
   const object = event.data.object as Obj;
-  const plan = text(options.plan) ?? text(child(object.metadata, 'plan'));
-
-  const update = (email: string | undefined, add: string[], remove: string[], name?: string): ContactUpdate => {
-    const address = text(options.email) ?? email;
-    if (!address) {
-      throw new Error(`Stripe's ${event.type} event has no email for this customer: look it up and pass it as options.email.`);
-    }
-    const result: ContactUpdate = { email: address.toLowerCase() };
-    if (name) {
-      const [first, ...rest] = name.split(/\s+/);
-      result.first_name = first;
-      if (rest.length > 0) result.last_name = rest.join(' ');
-    }
-    if (add.length > 0) result.tags = add;
-    if (remove.length > 0) result.detach_tags = remove;
-    return result;
+  const context: Context = {
+    object,
+    previous: (event.data.previous_attributes ?? {}) as Obj,
+    tags: { ...DEFAULT_TAG_NAMES, ...options.tags },
+    plan: text(options.plan) ?? text(child(object.metadata, 'plan')),
   };
+  const change = HANDLERS[event.type]?.(context);
+  if (!change) return null;
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-    case 'checkout.session.async_payment_succeeded': {
-      // A session can complete before a delayed payment (bank debits) clears: Stripe then sends
-      // async_payment_succeeded when it does. A setup-mode session saves a card and takes no payment.
-      if (object.mode === 'setup') return null;
-      if (event.type === 'checkout.session.completed' && object.payment_status === 'unpaid') return null;
-      const details = object.customer_details;
-      return update(
-        text(child(details, 'email')) ?? text(object.customer_email),
-        list(tags.customer, plan),
-        list(tags.trial, tags.cancelled),
-        text(child(details, 'name')),
-      );
-    }
-    case 'invoice.paid':
-      return update(text(object.customer_email), list(tags.customer), list(tags.cancelled));
-    case 'customer.subscription.deleted':
-      return update(undefined, list(tags.cancelled), list(tags.customer, plan));
-    case 'charge.refunded':
-      // A partial refund leaves the customer a customer.
-      if (object.refunded !== true) return null;
-      return update(text(child(object.billing_details, 'email')) ?? text(object.receipt_email), list(tags.refunded), list(tags.customer));
-    default:
-      return null;
+  const address = text(options.email) ?? change.email;
+  if (!address) {
+    if (change.optional) return null;
+    throw new Error(`Stripe's ${event.type} event has no email for this customer: look it up and pass it as options.email.`);
   }
+  const result: ContactUpdate = { email: address.toLowerCase() };
+  if (change.name) {
+    const [first, ...rest] = change.name.split(/\s+/);
+    result.first_name = first;
+    if (rest.length > 0) result.last_name = rest.join(' ');
+  }
+  if (change.add.length > 0) result.tags = change.add;
+  if (change.remove.length > 0) result.detach_tags = change.remove;
+  return result;
 }
 
 export interface SendContactUpdateOptions {

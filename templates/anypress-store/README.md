@@ -6,7 +6,7 @@ Plugins are listed in the order AnyPress shows them everywhere.
 
 | | |
 |---|---|
-| WordPress | 7.1.4 for the build; stores run `wordpress:7.1-php8.3-apache` (version `7.1`, PHP `8.3`) |
+| WordPress | 7.1.5 for the build; stores run `wordpress:7.1-php8.3-apache` (version `7.1`, PHP `8.3`) |
 | Theme | The [AnyPress theme](https://github.com/otaku-solutions/anypress-theme) (a release pinned by version and checksum in [`theme.sh`](theme.sh)), a block theme with 16 kits (a style, sections and a whole website for one kind of business) and AnyPress Blocks (32 sections that work with any kit); the only theme installed. Stores made from versions before v1.1.0 run [Ollie](https://wordpress.org/themes/ollie/) |
 | Plugins | AnyPress Client (built from [`anypress-plugins`](https://github.com/otaku-solutions/anypress-plugins) `packages/anypress-client` at the release in [`CLIENT_VERSION`](CLIENT_VERSION)) and these free wordpress.org plugins, all active: |
 
@@ -14,21 +14,21 @@ Plugins are listed in the order AnyPress shows them everywhere.
 |---|---|---|
 | FluentAuth | `fluent-security` | 3.1.1 |
 | FluentSMTP | `fluent-smtp` | 2.4.5 |
-| FluentCRM | `fluent-crm` | 3.3.1 |
+| FluentCRM | `fluent-crm` | 3.3.5 |
 | Fluent Forms | `fluentform` | 6.2.17 |
 | FluentBooking | `fluent-booking` | 2.6.0 |
-| FluentCart | `fluent-cart` | 2.3.1 |
-| FluentCommunity | `fluent-community` | 2.14.0 |
-| FluentPlayer | `fluent-player` | 1.4.0 |
-| FluentAffiliate | `fluent-affiliate` | 1.7.0 |
-| Fluent Support | `fluent-support` | 2.5.0 |
+| FluentCart | `fluent-cart` | 2.3.3 |
+| FluentCommunity | `fluent-community` | 2.15.0 |
+| FluentPlayer | `fluent-player` | 1.5.0 |
+| FluentAffiliate | `fluent-affiliate` | 1.8.0 |
+| Fluent Support | `fluent-support` | 2.5.1 |
 | FluentSnippets | `easy-code-manager` | 10.58 |
-| Ninja Tables | `ninja-tables` | 5.5.1 |
-| Ninja Charts | `ninja-charts` | 3.5.0 |
+| Ninja Tables | `ninja-tables` | 5.5.3 |
+| Ninja Charts | `ninja-charts` | 3.6.0 |
 | WP Social Ninja | `wp-social-reviews` | 4.5.1 |
-| Rank Math SEO | `seo-by-rank-math` | 1.0.282 |
-| AutomatorWP | `automatorwp` | 6.1.1 |
-| WP Fusion Lite | `wp-fusion-lite` | 3.48.0 |
+| Rank Math SEO | `seo-by-rank-math` | 1.0.283 |
+| AutomatorWP | `automatorwp` | 6.1.3 |
+| WP Fusion Lite | `wp-fusion-lite` | 3.48.3 |
 
 Plus FluentToolkit 2.1.4 (`fluent-toolkit`, shown in wp-admin as FluentHub: one dashboard for the Fluent plugins). It isn't
 on wordpress.org, so its GPL zip from WPManageNinja is kept in [`plugins/`](plugins/) and checked by SHA-256 like the others;
@@ -64,7 +64,7 @@ And HighLevel's [LeadConnector](https://wordpress.org/plugins/leadconnector/) 4.
 chat widget and calendars on the site. It is installed **off** (`OFF_PLUGINS` in [`build.sh`](build.sh)) and only the
 `highlevel` site type turns it on.
 
-And WordPress's [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) 0.7.1 (`mcp-adapter`), installed off and turned on by
+And WordPress's [MCP Adapter](https://wordpress.org/plugins/mcp-adapter/) 0.7.2 (`mcp-adapter`), installed off and turned on by
 AnyPress Client on every site type (it is always on, with no switch). AI apps that speak MCP can work on the site's
 pages and design, and set up AutomatorWP automations through AutomatorWP's own abilities, at `/wp-json/mcp/anypress`, signed in as a WordPress user with an application password; Dashboard →
 Your plan → AI apps (MCP) shows the address. It is pinned in [`build.sh`](build.sh) (`OFF_PLUGINS`) and isn't in
@@ -77,7 +77,7 @@ AnyPress Client then sets it up once with the site's own language as the default
 WordPress's translation files and a language switcher in the menus. It is pinned in [`build.sh`](build.sh)
 (`OFF_PLUGINS`) and isn't in `roles.json`.
 
-And [Redis Object Cache](https://wordpress.org/plugins/redis-cache/) 3.0.0 (`redis-cache`), installed off. Community and
+And [Redis Object Cache](https://wordpress.org/plugins/redis-cache/) 3.0.1 (`redis-cache`), installed off. Community and
 everything sites get their own Redis, and WordPress keeps its object cache there through the plugin's drop-in and its
 Predis client, set up by the platform (the plugin itself stays off). Other site types keep WordPress's own cache. It
 is pinned in [`build.sh`](build.sh) (`OFF_PLUGINS`) and isn't in `roles.json`.

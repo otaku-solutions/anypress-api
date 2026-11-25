@@ -51,6 +51,7 @@ If you ever change the repository name, change `SPLIT_REPO` in `release-sdk-php.
    git tag sdk-ts-v0.1.0
    git push origin sdk-ts-v0.1.0
    ```
+   Or run **Release TypeScript SDK** by hand on `main` (Actions, Run workflow): it releases the version in `package.json`.
 3. The workflow checks the tag matches `package.json`, checks the generated types are current, builds, and publishes with provenance. Watch it under **Actions**.
 
 To see what will be published, run `npm pack --dry-run` in `sdk/typescript`. It should list `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and `package.json`, and nothing else.

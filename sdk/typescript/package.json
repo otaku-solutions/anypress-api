@@ -1,6 +1,6 @@
 {
   "name": "waas-provisioning-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Typed TypeScript client for the AnyPress API: create and manage WordPress stores from your own code.",
   "keywords": [
     "wordpress",

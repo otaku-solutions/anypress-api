@@ -2,7 +2,7 @@
 
 All notable changes to `waas-provisioning-sdk` are listed here. Versions follow [Semantic Versioning](https://semver.org). Until 1.0.0, a minor version (0.x.0) may change the API.
 
-## Unreleased
+## 0.2.0
 
 - `contactUpdateFromStripe()`, `sendContactUpdate()` and `tagTimes()`: keep a Back Office store's FluentCRM in step with payments your own app takes with Stripe (a late event leaves alone the tags a newer one already changed; paid, renewed, failed and past-due payments, plan changes, trials ending, abandoned checkouts, cancels, refunds and disputes become tags).
 - `tenants.addEmailPack()`: emails on top of a store's monthly plan (`POST /v1/tenants/email-packs`).

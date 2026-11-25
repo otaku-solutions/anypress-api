@@ -144,14 +144,17 @@ export async function domainAnswered(pool: Pool, domain: string): Promise<boolea
 }
 
 /** The brand domain's own services, never a store's address. */
-const BRAND_SERVICE_LABELS = new Set(['www', 'api', 'app']);
+const BRAND_SERVICE_LABELS = new Set(['api', 'app']);
 
 /**
- * Whether the platform admin may give a store this name under the brand domain (community.anypress.io):
- * one label, not one of the brand domain's own services. AnyPress runs its own sites as stores this way.
+ * Whether the platform admin may give a store this name under the brand domain: the brand domain itself
+ * (anypress.io) or one label under it (www.anypress.io, community.anypress.io), never one of the brand
+ * domain's own services. AnyPress runs its own sites as stores this way.
  */
 export function isBrandStoreName(domain: string, brandDomain: string | undefined): boolean {
-  if (!brandDomain || !domain.endsWith(`.${brandDomain}`)) return false;
+  if (!brandDomain) return false;
+  if (domain === brandDomain) return true;
+  if (!domain.endsWith(`.${brandDomain}`)) return false;
   const label = domain.slice(0, -brandDomain.length - 1);
   return !label.includes('.') && !BRAND_SERVICE_LABELS.has(label);
 }

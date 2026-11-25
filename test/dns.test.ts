@@ -46,13 +46,13 @@ describe('isReservedDomain', () => {
 });
 
 describe('isBrandStoreName', () => {
-  it('allows one label under the brand domain, except its own services', () => {
+  it('allows the brand domain and one label under it, except its own services', () => {
     expect(isBrandStoreName('community.anypress.io', 'anypress.io')).toBe(true);
     expect(isBrandStoreName('shop.anypress.io', 'anypress.io')).toBe(true);
-    expect(isBrandStoreName('www.anypress.io', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('www.anypress.io', 'anypress.io')).toBe(true);
     expect(isBrandStoreName('api.anypress.io', 'anypress.io')).toBe(false);
     expect(isBrandStoreName('app.anypress.io', 'anypress.io')).toBe(false);
-    expect(isBrandStoreName('anypress.io', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('anypress.io', 'anypress.io')).toBe(true);
     expect(isBrandStoreName('a.b.anypress.io', 'anypress.io')).toBe(false);
     expect(isBrandStoreName('community.example.com', 'anypress.io')).toBe(false);
     expect(isBrandStoreName('community.anypress.io', undefined)).toBe(false);

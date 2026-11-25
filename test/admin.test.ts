@@ -207,7 +207,7 @@ describe('admin endpoints', () => {
     const res = await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 200, { domainName: 'community.brand.example' });
     expect(res.domain).toBe('community.brand.example');
     // The brand domain's own services stay out of reach, and a name another store has is refused.
-    for (const name of ['www.brand.example', 'api.brand.example', 'app.brand.example', 'brand.example', 'a.b.brand.example']) {
+    for (const name of ['api.brand.example', 'app.brand.example', 'a.b.brand.example']) {
       await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 400, { domainName: name });
     }
     await admin('PUT', `/admin/tenants/${shop.id}/domains/main`, 400, { domainName: 'community.brand.example' });
@@ -225,6 +225,15 @@ describe('admin endpoints', () => {
     expect(own2.status).toBeLessThan(300);
     const ordinary = await t.call('PUT', `/v1/tenants/domains/main?externalId=${own.externalId}`, { body: { domainName: 'own-community-2.example' } });
     expect(ordinary.status).toBe(200);
+  });
+
+  it('lets the platform admin give a store the brand domain itself and its www name', async () => {
+    const home = await newTenant({ name: 'Own Home Page' });
+    expect((await admin('PUT', `/admin/tenants/${home.id}/domains/main`, 200, { domainName: 'brand.example' })).domain).toBe('brand.example');
+    expect((await admin('PUT', `/admin/tenants/${home.id}/domains/main`, 200, { domainName: 'www.brand.example' })).domain).toBe('www.brand.example');
+    await admin('PUT', `/admin/tenants/${shop.id}/domains/main`, 400, { domainName: 'brand.example' });
+    const viaKey = await t.call('POST', `/v1/tenants/domains?externalId=${home.externalId}`, { body: { domainName: 'brand.example', setAsMainDomain: true } });
+    expect(viaKey.status).toBe(400);
   });
 
   it('backups: includes a deleted tenant\'s, with expiresAt', async () => {

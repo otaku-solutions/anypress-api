@@ -16,21 +16,21 @@
 set -euo pipefail
 
 # Pinned inputs. Bump these (and the checksums) to rebuild on newer releases.
-WP_VERSION=${WP_VERSION:-7.1.4}
-WP_SHA256=${WP_SHA256:-a147146c159362778ecbbbfb07bb20ddf4e85b130f971c824e656a8f938c5f87}
+WP_VERSION=${WP_VERSION:-7.1.5}
+WP_SHA256=${WP_SHA256:-cd44160a3fcce179fe170331132fcfc05e84e2f9284e2aad38df2aea6edaeab1}
 # wordpress.org plugins: slug version sha256. All installed and active.
 PLUGINS="
-fluent-cart 2.3.1 dcd1af4986129b61e933bd07d9d71ca04087bbf0a7e947421a2ed065cc9f98c1
-fluent-crm 3.3.1 3559061805e780c60b5078917b702786f829a8e49e15f0edfc7288d55fc1f63e
+fluent-cart 2.3.3 777585f3305d44effab8a5fb7b84d67a06d55813077f85c8c25a594c29d6324a
+fluent-crm 3.3.5 0a5d84e669d842fb6e3373f8ec72f592b3d693c61812c9123500ff602ad9e54a
 fluentform 6.2.17 e5dda0290afa0232758017ce63c63c76a57c6f000a0861eb43772a88a39909bc
-wp-fusion-lite 3.48.0 72e480456caff66f25d8b88c63f403c9ba393e4e808d78b81ae48d13cf8976e6
+wp-fusion-lite 3.48.3 2fe6655ab3f8718628495d1c84fd93f8fcc3484397dba98be9ddca96c2fda95d
 fluent-security 3.1.1 e3e21bf941617de72628d0d254435cb87fdf6629ce3e00d847ad627d975c38d8
 fluent-booking 2.6.0 83eb315ddb562532ca38a362abae4bc787bd83c3d549e1736739ccb525ddcc34
-fluent-support 2.5.0 a9525ca9fdc5e6de34a37b3075db01cd7249818f76e93464d7aec44ac5f04899
-fluent-affiliate 1.7.0 f1c617715aaae58657b155c75752adab2db42dd1a8a896469823a19a3b3ee8c8
+fluent-support 2.5.1 f2ab94c53f05946469e9885b9f1f50e885ec176748c17ba4f0509d9a521a462b
+fluent-affiliate 1.8.0 662b695303754ebfaa6402c97c699002b3d4ab325c52fb5e2f9148967aeaa2ee
 easy-code-manager 10.58 39bfd2fe29b099147949086c42dfe715cedd4ddce3631c9ef33165470ed25667
-betterdocs 4.9.6 36a3e54255eceba29c8ac283e489a91a4f8fb7ad6d992b0bedab974bb9229134
-mcp-adapter 0.7.1 719d81aa1250615acfd8256f0acc8c13f1712f1ae398c3d5883c8b166024fe9b
+betterdocs 4.9.7 928459ab73b62b5d1b17fc9b5a5388701a144011fc956a8ce141d113f6d7e60c
+mcp-adapter 0.7.2 0c1fe70c25006a75cb91c1f23cb3abc8cbdced1dfa8b2c665c1919b98e2ac4e4
 "
 # Plugins that aren't on wordpress.org: slug version sha256, the zip shared with the store template
 # (../anypress-store/plugins/<slug>-<version>.zip). FluentKit puts the Fluent plugins and AnyPress in one dashboard.

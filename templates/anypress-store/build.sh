@@ -10,28 +10,28 @@
 set -euo pipefail
 
 # Pinned inputs. Bump these (and the checksums) to rebuild on newer releases.
-WP_VERSION=${WP_VERSION:-7.1.4}
-WP_SHA256=${WP_SHA256:-a147146c159362778ecbbbfb07bb20ddf4e85b130f971c824e656a8f938c5f87}
+WP_VERSION=${WP_VERSION:-7.1.5}
+WP_SHA256=${WP_SHA256:-cd44160a3fcce179fe170331132fcfc05e84e2f9284e2aad38df2aea6edaeab1}
 # wordpress.org plugins: slug version sha256, in the order AnyPress lists them. All installed and active (roles.json
 # switches them per site type).
 PLUGINS="
 fluent-security 3.1.1 e3e21bf941617de72628d0d254435cb87fdf6629ce3e00d847ad627d975c38d8
 fluent-smtp 2.4.5 f495ffcf3c61c4f2b0e20af1092bae256e2a666b9453c8402eb621bc4e444f00
-fluent-crm 3.3.1 3559061805e780c60b5078917b702786f829a8e49e15f0edfc7288d55fc1f63e
+fluent-crm 3.3.5 0a5d84e669d842fb6e3373f8ec72f592b3d693c61812c9123500ff602ad9e54a
 fluentform 6.2.17 e5dda0290afa0232758017ce63c63c76a57c6f000a0861eb43772a88a39909bc
 fluent-booking 2.6.0 83eb315ddb562532ca38a362abae4bc787bd83c3d549e1736739ccb525ddcc34
-fluent-cart 2.3.1 dcd1af4986129b61e933bd07d9d71ca04087bbf0a7e947421a2ed065cc9f98c1
-fluent-community 2.14.0 79c5f804ce12cfa19e58ff2b200a2d661b7ddb8c56c3828e9d675aa78a1ec53a
-fluent-player 1.4.0 edba3f48662136605564bb040fda0b51d50c154c167c699cca47ce3f43f20f1c
-fluent-affiliate 1.7.0 f1c617715aaae58657b155c75752adab2db42dd1a8a896469823a19a3b3ee8c8
-fluent-support 2.5.0 a9525ca9fdc5e6de34a37b3075db01cd7249818f76e93464d7aec44ac5f04899
+fluent-cart 2.3.3 777585f3305d44effab8a5fb7b84d67a06d55813077f85c8c25a594c29d6324a
+fluent-community 2.15.0 9a01fec55486f6aee84362c2445bcdc21f710462e206e64463be800acb8992fa
+fluent-player 1.5.0 02cabfe8570094552f26f56f60f56672162258bb09cfb1f3dc940b50588c2d0d
+fluent-affiliate 1.8.0 662b695303754ebfaa6402c97c699002b3d4ab325c52fb5e2f9148967aeaa2ee
+fluent-support 2.5.1 f2ab94c53f05946469e9885b9f1f50e885ec176748c17ba4f0509d9a521a462b
 easy-code-manager 10.58 39bfd2fe29b099147949086c42dfe715cedd4ddce3631c9ef33165470ed25667
-ninja-tables 5.5.1 b86a77a3b8c63952feba3012b7717b98b19b817cb40857b72e1af258c3f6348a
-ninja-charts 3.5.0 4ac145d6bc98532a9eb15f3e7d7799122b8b9a8bcfbf5c9b7e74ae8680862dad
+ninja-tables 5.5.3 5ec0d9f5b85c313364875fb268331577c4d70c56bef9b919e1f23c4e3650b11c
+ninja-charts 3.6.0 3c9121c8de74f01f3b009193bde7d52d6ab637a1847564b5efd0a6d222ad711f
 wp-social-reviews 4.5.1 cf2f0255d6d6b128b098dc540ba6664d32a85ceb75ccf22a539d99194f4d44b6
-seo-by-rank-math 1.0.282 d4434c5726c62cdd819f0129cac3df5fea0c8efafbcd812856cf87f5e05691a3
-automatorwp 6.1.1 5b63d943831bd90e7df4576cf9ac9dbf5afd054d590eedd2b6cb4c9262eff082
-wp-fusion-lite 3.48.0 72e480456caff66f25d8b88c63f403c9ba393e4e808d78b81ae48d13cf8976e6
+seo-by-rank-math 1.0.283 873f3df9496b1ade5f684b866f9bb8c1eddc900838e4aed983b38d298b116088
+automatorwp 6.1.3 12b56db5458d6c1409706f9d41956033373d75e14e5286980fcd6d3f85c81de5
+wp-fusion-lite 3.48.3 2fe6655ab3f8718628495d1c84fd93f8fcc3484397dba98be9ddca96c2fda95d
 "
 # wordpress.org plugins installed but left off: slug version sha256. AnyPress Client turns the MCP Adapter on on every
 # store (always on since AnyPress Client 2.18.0; not in roles.json).
@@ -40,10 +40,10 @@ wp-fusion-lite 3.48.0 72e480456caff66f25d8b88c63f403c9ba393e4e808d78b81ae48d13cf
 # Redis Object Cache stays off: only its object-cache.php and Predis client are used, by the drop-in the provisioner's
 # agent installs, on stores that have their own Redis (community and everything; not in roles.json).
 OFF_PLUGINS="
-mcp-adapter 0.7.1 719d81aa1250615acfd8256f0acc8c13f1712f1ae398c3d5883c8b166024fe9b
+mcp-adapter 0.7.2 0c1fe70c25006a75cb91c1f23cb3abc8cbdced1dfa8b2c665c1919b98e2ac4e4
 leadconnector 4.0.7 03854dce113adde9f792a0b2bd397eb139902c16d08328bcd9c57d6c96a41dbc
 polylang 3.9.2 90d695711f642efd942d9b7ce25698827b7332a7b26222dfd21719c300e5f9cb
-redis-cache 3.0.0 7a03342d3defbe94cac8d0470b42dc1a1c34331b19c47205df20ceccd3c8f54a
+redis-cache 3.0.1 8de85553394c4462dd43d38a403b805e8fb404d7dc34e02ecd313ea37002196b
 "
 # Plugins that aren't on wordpress.org: slug version sha256, zipped in plugins/<slug>-<version>.zip (GPL, from the vendor).
 # FluentToolkit (WPManageNinja's "FluentHub": one dashboard for the Fluent plugins) updates itself from the vendor afterwards.

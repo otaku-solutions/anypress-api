@@ -202,6 +202,40 @@ describe('admin endpoints', () => {
     await admin('PUT', `/admin/tenants/${crypto.randomUUID()}/domains/main`, 404, { domainName: 'x.example.com' });
   });
 
+  it('lets the platform admin give a store a name under the brand domain, but not a storefront', async () => {
+    const own = await newTenant({ name: 'Own Community' });
+    const res = await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 200, { domainName: 'community.brand.example' });
+    expect(res.domain).toBe('community.brand.example');
+    // The brand domain's own services stay out of reach, and a name another store has is refused.
+    for (const name of ['api.brand.example', 'app.brand.example', 'a.b.brand.example']) {
+      await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 400, { domainName: name });
+    }
+    await admin('PUT', `/admin/tenants/${shop.id}/domains/main`, 400, { domainName: 'community.brand.example' });
+    // A storefront's own key still gets "in use" for any brand name.
+    const viaKey = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'help-center.brand.example' } });
+    expect(viaKey.status).toBe(400);
+    // Nor can it pick the brand name the admin already put on its store.
+    const reselect = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'community.brand.example', setAsMainDomain: true } });
+    expect(reselect.status).toBe(400);
+    // Once another name is main, the storefront can switch between its own names but not back to the brand name.
+    await admin('PUT', `/admin/tenants/${own.id}/domains/main`, 200, { domainName: 'own-community.example' });
+    const back = await t.call('PUT', `/v1/tenants/domains/main?externalId=${own.externalId}`, { body: { domainName: 'community.brand.example' } });
+    expect(back.status).toBe(400);
+    const own2 = await t.call('POST', `/v1/tenants/domains?externalId=${own.externalId}`, { body: { domainName: 'own-community-2.example' } });
+    expect(own2.status).toBeLessThan(300);
+    const ordinary = await t.call('PUT', `/v1/tenants/domains/main?externalId=${own.externalId}`, { body: { domainName: 'own-community-2.example' } });
+    expect(ordinary.status).toBe(200);
+  });
+
+  it('lets the platform admin give a store the brand domain itself and its www name', async () => {
+    const home = await newTenant({ name: 'Own Home Page' });
+    expect((await admin('PUT', `/admin/tenants/${home.id}/domains/main`, 200, { domainName: 'brand.example' })).domain).toBe('brand.example');
+    expect((await admin('PUT', `/admin/tenants/${home.id}/domains/main`, 200, { domainName: 'www.brand.example' })).domain).toBe('www.brand.example');
+    await admin('PUT', `/admin/tenants/${shop.id}/domains/main`, 400, { domainName: 'brand.example' });
+    const viaKey = await t.call('POST', `/v1/tenants/domains?externalId=${home.externalId}`, { body: { domainName: 'brand.example', setAsMainDomain: true } });
+    expect(viaKey.status).toBe(400);
+  });
+
   it('backups: includes a deleted tenant\'s, with expiresAt', async () => {
     const gone = await newTenant({ name: 'Gone Shop' });
     await t.call('POST', `/v1/tenants/suspend?externalId=${gone.externalId}`, { body: {} });

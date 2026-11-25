@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dnsSafeLabel, isReservedDomain } from '../src/tenants.ts';
+import { dnsSafeLabel, isBrandStoreName, isReservedDomain } from '../src/tenants.ts';
 
 // sslip.io takes trailing -<digits> together with the IP after it (v1-0-0.191.101.15.236.sslip.io
 // resolves to 0.191.101.15), so generated labels must not end that way.
@@ -42,5 +42,19 @@ describe('isReservedDomain', () => {
 
   it('reserves nothing when no platform domain is set', () => {
     expect(isReservedDomain('www.anypress.io', undefined)).toBe(false);
+  });
+});
+
+describe('isBrandStoreName', () => {
+  it('allows the brand domain and one label under it, except its own services', () => {
+    expect(isBrandStoreName('community.anypress.io', 'anypress.io')).toBe(true);
+    expect(isBrandStoreName('shop.anypress.io', 'anypress.io')).toBe(true);
+    expect(isBrandStoreName('www.anypress.io', 'anypress.io')).toBe(true);
+    expect(isBrandStoreName('api.anypress.io', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('app.anypress.io', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('anypress.io', 'anypress.io')).toBe(true);
+    expect(isBrandStoreName('a.b.anypress.io', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('community.example.com', 'anypress.io')).toBe(false);
+    expect(isBrandStoreName('community.anypress.io', undefined)).toBe(false);
   });
 });

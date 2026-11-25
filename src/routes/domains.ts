@@ -14,7 +14,7 @@ import {
   renewAtStorefront,
   transferCode,
 } from "../domainsales.ts";
-import { domainInUse, findTenant, normalizeDomain } from "../tenants.ts";
+import { domainAnswered, domainInUse, findTenant, isBrandStoreName, isReservedDomain, normalizeDomain } from "../tenants.ts";
 
 interface AddDomainParams {
   domainName: string;
@@ -48,13 +48,15 @@ async function applyDomains(
 
 /**
  * Adds a domain to the tenant (a no-op when it already has it), optionally making it the main one.
- * Shared by addTenantDomain and the admin dashboard's change of a store's address.
+ * Shared by addTenantDomain and the admin dashboard's change of a store's address. `brandNames`
+ * (the platform admin only) lets a store take a name under the brand domain, such as community.anypress.io.
  */
 export async function addTenantDomain(
   deps: Deps,
   tenant: any,
   domainName: string,
   setAsMain: boolean,
+  brandNames = false,
 ) {
   const { pool, config } = deps;
   const domain = normalizeDomain(domainName);
@@ -63,11 +65,14 @@ export async function addTenantDomain(
     [tenant.id, domain],
   );
   const existing = rows[0];
-  if (
-    !existing &&
-    (await domainInUse(pool, domain, config.platformDomain, config.brandDomain))
-  )
-    throw badRequest(`Domain ${domain} is already in use`);
+  const brandName = brandNames && isBrandStoreName(domain, config.brandDomain);
+  // A name the platform admin gave under the brand domain stays theirs to pick, even once it's on the store.
+  const taken = existing
+    ? !brandName && isReservedDomain(domain, config.platformDomain, config.brandDomain)
+    : brandName
+      ? await domainAnswered(pool, domain)
+      : await domainInUse(pool, domain, config.platformDomain, config.brandDomain);
+  if (taken) throw badRequest(`Domain ${domain} is already in use`);
 
   if (!existing || setAsMain) {
     await applyDomains(deps, tenant.id, async (client) => {
@@ -194,6 +199,9 @@ export function domainRoutes(deps: Deps) {
       await readJson(c),
     );
     const domain = await findDomain(tenant.id, body.domainId, body.domainName);
+    // A name under the brand domain is the platform admin's to choose (admin.ts), even once it is on the store.
+    if (!domain.is_main && isReservedDomain(domain.domain_name, config.platformDomain, config.brandDomain))
+      throw badRequest(`Domain ${domain.domain_name} is already in use`);
     if (!domain.is_main) {
       await applyDomains(deps, tenant.id, async (client) => {
         await client.query(

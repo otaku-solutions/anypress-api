@@ -130,13 +130,33 @@ export function isReservedDomain(domain: string, platformDomain: string | undefi
 
 /** Whether any store, version or seller's dashboard already answers on this domain, or the platform keeps it for itself. */
 export async function domainInUse(pool: Pool, domain: string, platformDomain?: string, brandDomain?: string): Promise<boolean> {
-  if (isReservedDomain(domain, platformDomain, brandDomain)) return true;
+  return isReservedDomain(domain, platformDomain, brandDomain) || (await domainAnswered(pool, domain));
+}
+
+/** Whether a store, version or seller's dashboard already answers on this domain. */
+export async function domainAnswered(pool: Pool, domain: string): Promise<boolean> {
   const { rowCount } = await pool.query(
     `SELECT 1 FROM tenant_domains WHERE domain_name = $1 UNION ALL SELECT 1 FROM versions WHERE domain = $1
      UNION ALL SELECT 1 FROM dashboard_domains WHERE domain = $1`,
     [domain],
   );
   return (rowCount ?? 0) > 0;
+}
+
+/** The brand domain's own services, never a store's address. */
+const BRAND_SERVICE_LABELS = new Set(['api', 'app']);
+
+/**
+ * Whether the platform admin may give a store this name under the brand domain: the brand domain itself
+ * (anypress.io) or one label under it (www.anypress.io, community.anypress.io), never one of the brand
+ * domain's own services. AnyPress runs its own sites as stores this way.
+ */
+export function isBrandStoreName(domain: string, brandDomain: string | undefined): boolean {
+  if (!brandDomain) return false;
+  if (domain === brandDomain) return true;
+  if (!domain.endsWith(`.${brandDomain}`)) return false;
+  const label = domain.slice(0, -brandDomain.length - 1);
+  return !label.includes('.') && !BRAND_SERVICE_LABELS.has(label);
 }
 
 export const TENANT_SELECT = `

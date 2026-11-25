@@ -640,7 +640,8 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
   });
 
   // Makes a domain the store's main address (adding it if new), as the storefront's addTenantDomain
-  // with setAsMainDomain does, for any product. The old main domain stays as a redirect.
+  // with setAsMainDomain does, for any product. The old main domain stays as a redirect. The platform
+  // admin may also use a name under the brand domain (community.anypress.io) for AnyPress's own sites.
   app.put('/tenants/:id/domains/main', async (c) => {
     const id = c.req.param('id');
     if (!isUuid(id)) throw notFound(`Tenant ${id} not found`);
@@ -652,7 +653,7 @@ export function adminRoutes(deps: Deps, { session = false } = {}) {
     ]);
     if (!rows[0]) throw notFound(`Tenant ${id} not found`);
     assertChangeable(rows[0]);
-    return c.json(await addTenantDomain(deps, rows[0], body.domainName, true));
+    return c.json(await addTenantDomain(deps, rows[0], body.domainName, true, scopedProduct(c) === null));
   });
 
   // Rolls a live store back to one of its own Done backups, in place (docs/store-backups.md). What

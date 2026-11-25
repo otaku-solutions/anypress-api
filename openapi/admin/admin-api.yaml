@@ -1416,8 +1416,9 @@ paths:
       description: >-
         Adds the domain if the tenant doesn't have it yet and makes it the main domain, like
         addTenantDomain with setAsMainDomain, for any product. The old main domain stays as a
-        redirect. The tenant is Pending until the domain job finishes. 400 when the domain is
-        invalid or taken, or the tenant is Removing or Failed.
+        redirect. The tenant is Pending until the domain job finishes. The platform admin may also
+        use the brand domain itself (anypress.io) or one name under it (www.anypress.io,
+        community.anypress.io) for AnyPress's own sites, except api and app. 400 when the domain is invalid or taken, or the tenant is Removing or Failed.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:

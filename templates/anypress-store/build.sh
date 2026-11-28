@@ -15,20 +15,20 @@ WP_SHA256=${WP_SHA256:-cd44160a3fcce179fe170331132fcfc05e84e2f9284e2aad38df2aea6
 # wordpress.org plugins: slug version sha256, in the order AnyPress lists them. All installed and active (roles.json
 # switches them per site type).
 PLUGINS="
-fluent-security 3.1.1 e3e21bf941617de72628d0d254435cb87fdf6629ce3e00d847ad627d975c38d8
+fluent-security 3.2.0 02df13567404a5647a68a22a0521eb10569ff97e50f62ad6756486187a28824f
 fluent-smtp 2.4.5 f495ffcf3c61c4f2b0e20af1092bae256e2a666b9453c8402eb621bc4e444f00
 fluent-crm 3.3.5 0a5d84e669d842fb6e3373f8ec72f592b3d693c61812c9123500ff602ad9e54a
 fluentform 6.2.17 e5dda0290afa0232758017ce63c63c76a57c6f000a0861eb43772a88a39909bc
 fluent-booking 2.6.0 83eb315ddb562532ca38a362abae4bc787bd83c3d549e1736739ccb525ddcc34
 fluent-cart 2.3.3 777585f3305d44effab8a5fb7b84d67a06d55813077f85c8c25a594c29d6324a
-fluent-community 2.15.0 9a01fec55486f6aee84362c2445bcdc21f710462e206e64463be800acb8992fa
+fluent-community 2.16.0 da815e58fd0c7b0de62c9d5132d63fb95e70e57da7e10f445545e9df000feae5
 fluent-player 1.5.0 02cabfe8570094552f26f56f60f56672162258bb09cfb1f3dc940b50588c2d0d
 fluent-affiliate 1.8.0 662b695303754ebfaa6402c97c699002b3d4ab325c52fb5e2f9148967aeaa2ee
 fluent-support 2.5.1 f2ab94c53f05946469e9885b9f1f50e885ec176748c17ba4f0509d9a521a462b
 easy-code-manager 10.58 39bfd2fe29b099147949086c42dfe715cedd4ddce3631c9ef33165470ed25667
 ninja-tables 5.5.3 5ec0d9f5b85c313364875fb268331577c4d70c56bef9b919e1f23c4e3650b11c
 ninja-charts 3.6.0 3c9121c8de74f01f3b009193bde7d52d6ab637a1847564b5efd0a6d222ad711f
-wp-social-reviews 4.5.1 cf2f0255d6d6b128b098dc540ba6664d32a85ceb75ccf22a539d99194f4d44b6
+wp-social-reviews 4.5.2 4a38b9f4512cc1fe175045003dcbf2d1b384d9cdadcd27ab3a8cfa1fce88f2db
 seo-by-rank-math 1.0.283 873f3df9496b1ade5f684b866f9bb8c1eddc900838e4aed983b38d298b116088
 automatorwp 6.1.3 12b56db5458d6c1409706f9d41956033373d75e14e5286980fcd6d3f85c81de5
 wp-fusion-lite 3.48.3 2fe6655ab3f8718628495d1c84fd93f8fcc3484397dba98be9ddca96c2fda95d
@@ -43,7 +43,7 @@ OFF_PLUGINS="
 mcp-adapter 0.7.2 0c1fe70c25006a75cb91c1f23cb3abc8cbdced1dfa8b2c665c1919b98e2ac4e4
 leadconnector 4.0.7 03854dce113adde9f792a0b2bd397eb139902c16d08328bcd9c57d6c96a41dbc
 polylang 3.9.2 90d695711f642efd942d9b7ce25698827b7332a7b26222dfd21719c300e5f9cb
-redis-cache 3.0.1 8de85553394c4462dd43d38a403b805e8fb404d7dc34e02ecd313ea37002196b
+redis-cache 3.0.2 89dc9553b5014d2f752b8cc6d945a5117974eb92225f6cfe15618b7f275ec31f
 "
 # Plugins that aren't on wordpress.org: slug version sha256, zipped in plugins/<slug>-<version>.zip (GPL, from the vendor).
 # FluentToolkit (WPManageNinja's "FluentHub": one dashboard for the Fluent plugins) updates itself from the vendor afterwards.

@@ -12,20 +12,20 @@ Plugins are listed in the order AnyPress shows them everywhere.
 
 | Plugin | Slug | Version |
 |---|---|---|
-| FluentAuth | `fluent-security` | 3.1.1 |
+| FluentAuth | `fluent-security` | 3.2.0 |
 | FluentSMTP | `fluent-smtp` | 2.4.5 |
 | FluentCRM | `fluent-crm` | 3.3.5 |
 | Fluent Forms | `fluentform` | 6.2.17 |
 | FluentBooking | `fluent-booking` | 2.6.0 |
 | FluentCart | `fluent-cart` | 2.3.3 |
-| FluentCommunity | `fluent-community` | 2.15.0 |
+| FluentCommunity | `fluent-community` | 2.16.0 |
 | FluentPlayer | `fluent-player` | 1.5.0 |
 | FluentAffiliate | `fluent-affiliate` | 1.8.0 |
 | Fluent Support | `fluent-support` | 2.5.1 |
 | FluentSnippets | `easy-code-manager` | 10.58 |
 | Ninja Tables | `ninja-tables` | 5.5.3 |
 | Ninja Charts | `ninja-charts` | 3.6.0 |
-| WP Social Ninja | `wp-social-reviews` | 4.5.1 |
+| WP Social Ninja | `wp-social-reviews` | 4.5.2 |
 | Rank Math SEO | `seo-by-rank-math` | 1.0.283 |
 | AutomatorWP | `automatorwp` | 6.1.3 |
 | WP Fusion Lite | `wp-fusion-lite` | 3.48.3 |
@@ -77,7 +77,7 @@ AnyPress Client then sets it up once with the site's own language as the default
 WordPress's translation files and a language switcher in the menus. It is pinned in [`build.sh`](build.sh)
 (`OFF_PLUGINS`) and isn't in `roles.json`.
 
-And [Redis Object Cache](https://wordpress.org/plugins/redis-cache/) 3.0.1 (`redis-cache`), installed off. Community and
+And [Redis Object Cache](https://wordpress.org/plugins/redis-cache/) 3.0.2 (`redis-cache`), installed off. Community and
 everything sites get their own Redis, and WordPress keeps its object cache there through the plugin's drop-in and its
 Predis client, set up by the platform (the plugin itself stays off). Other site types keep WordPress's own cache. It
 is pinned in [`build.sh`](build.sh) (`OFF_PLUGINS`) and isn't in `roles.json`.
